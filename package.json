@@ -8,7 +8,20 @@
     "build": "tsc",
     "watch": "tsc -w",
     "test": "jest",
-    "cdk": "cdk"
+    "cdk": "cdk",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy",
+    "diff": "cdk diff",
+    "validate": "npm run build && npm run test && cdk synth",
+    "bootstrap": "cdk bootstrap",
+    "deploy:dev": "cdk deploy helloworld-dev --require-approval never",
+    "deploy:staging": "cdk deploy helloworld-staging --require-approval never",
+    "deploy:prod": "cdk deploy helloworld-prod --require-approval never",
+    "deploy:shared": "cdk deploy helloworld-shared --require-approval never",
+    "deploy:all": "npm run deploy:dev && npm run deploy:staging && npm run deploy:shared && npm run deploy:prod",
+    "test:endpoints": "./scripts/validate-deployment.sh",
+    "setup:complete": "./scripts/complete-setup.sh"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
