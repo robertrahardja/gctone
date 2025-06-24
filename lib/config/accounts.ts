@@ -199,7 +199,7 @@ export const core_accounts = {
    * - Cross-account security assessment
    * - Detective controls and investigation
    */
-  audit: "testawsrahardja+audit@gmail.com", // replace with your email
+  audit: "testawsrahardjaaudit@gmail.com", // replace with your email
   
   /**
    * Log Archive Account
@@ -214,5 +214,5 @@ export const core_accounts = {
    * - AWS Config compliance data storage
    * - Security log analysis and forensics
    */
-  logarchive: "testawsrahardja+logs@gmail.com", // replace with your email
+  logarchive: "testawsrahardjalogs@gmail.com", // replace with your email
 };
