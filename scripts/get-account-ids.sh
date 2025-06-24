@@ -5,7 +5,12 @@
 # workload accounts created by Control Tower, then stores them in a .env file
 # for use by other deployment scripts (bootstrap, deploy, etc.)
 
+# Set AWS profile for SSO authentication
+# Change this to match your SSO profile name
+AWS_PROFILE="${AWS_PROFILE:-tar}"
+
 echo "🔍 getting account ids from control tower deployment..."
+echo "📋 using AWS profile: $AWS_PROFILE"
 # 🇸🇬 singapore: this script works the same regardless of region
 
 # Function to query AWS Organizations and get account ID by account name
@@ -15,16 +20,17 @@ get_account_id() {
   # Query AWS Organizations API to list all accounts in the organization
   # Filter by account name and return only the account ID
   aws organizations list-accounts \
-    --query "accounts[?name=='$account_name'].id" \
+    --profile "$AWS_PROFILE" \
+    --query "Accounts[?Name=='$account_name'].Id" \
     --output text 2>/dev/null
 }
 
 # Query each workload account created by Control Tower
 # These names must match exactly what was used during Control Tower account creation
-prod_account=$(get_account_id "production")
-staging_account=$(get_account_id "staging")
-dev_account=$(get_account_id "development")
-shared_account=$(get_account_id "shared-services")
+prod_account=$(get_account_id "Production")
+staging_account=$(get_account_id "Staging")
+dev_account=$(get_account_id "Development")
+shared_account=$(get_account_id "Shared Services")
 
 # Create .env file with all account IDs for use by other scripts
 # This file will be sourced by bootstrap-accounts.sh and deploy-applications.sh
@@ -38,7 +44,7 @@ shared_account_id=$shared_account
 
 # management account (the account you're currently logged into)
 # This is used for cross-account trust relationships during CDK bootstrap
-management_account_id=$(aws sts get-caller-identity --query account --output text)
+management_account_id=$(aws sts get-caller-identity --profile "$AWS_PROFILE" --query Account --output text)
 
 # 🇸🇬 singapore additions:
 # aws_region=ap-southeast-1
@@ -50,7 +56,7 @@ eof
 
 # Display summary of found account IDs for verification
 echo "📋 account ids found:"
-echo "├── management: $(aws sts get-caller-identity --query account --output text)"
+echo "├── management: $(aws sts get-caller-identity --profile "$AWS_PROFILE" --query Account --output text)"
 echo "├── production: $prod_account"
 echo "├── staging: $staging_account"
 echo "├── development: $dev_account"
