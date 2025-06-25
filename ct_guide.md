@@ -1,147 +1,142 @@
-# Simple AWS Control Tower + CDK v2 Guide (Universal Template)
+# AWS Control Tower + CDK v2 Greenfield Setup Checklist
 
-A streamlined AWS Control Tower setup with Hello World applications using **CDK v2.201.0+** with **dev/staging/prod** environments. Cost-optimized and simplified for greenfield projects.
+A step-by-step checklist for setting up AWS Control Tower with CDK v2 from scratch. Each step includes specific commands and console actions you can tick off as you complete them.
 
 > **🇸🇬 Singapore Region Notes**: This guide works universally but includes specific comments for Singapore deployment. Look for 🇸🇬 markers throughout the guide.
 
 ---
 
-## Phase 1: Prerequisites and Environment Setup
+## 🤖 Automation Summary
 
-### 1.1 Verify System Requirements
+### ✅ Can Be Automated (Post Control Tower Setup)
+- **Email Configuration Sync** - `./scripts/sync-account-emails.sh` (automatically updates accounts.ts)
+- **Workload Accounts Creation** - `./scripts/setup-post-controltower.sh`
+- **Organizational Units (OUs)** - Created automatically by scripts
+- **Billing Alerts & SNS Topics** - Fully automated via CloudWatch/SNS APIs
+- **AWS Budgets** - `./scripts/create-budgets.sh` 
+- **IAM Identity Center (SSO)** - `./scripts/setup-sso.sh`
+- **Cost Allocation Tags** - Automated activation
+- **Cost Explorer** - Automated enablement
+- **CDK Bootstrap & Deployment** - Existing scripts handle this
 
-```bash
-# Check Node.js (Need 20+ minimum, 22+ recommended)
-node --version
-# Expected: v22.x.x (recommended) or v20.x.x (minimum)
+### ❌ Must Be Done Manually
+- **Initial Control Tower Setup** - Requires root account and legal acceptance
+- **Guardrails Selection** - Part of Control Tower wizard (one-time decision)
+- **CloudTrail & Config** - Integrated into Control Tower setup
+- **Root Account MFA** - Security requirement (human verification needed)
+- **Email Verification** - AWS sends verification emails for new accounts
 
-# Check npm
-npm --version
-# Expected: 10.x.x or higher
+### 🔄 Hybrid Approach
+- **Phase 1-5.7**: Manual Control Tower setup (30-60 minutes)
+- **Phase 5.8+**: Automated post-setup (scripts handle everything else)
+- **Email sync**: Fully automated - no more manual copy-paste!
 
-# Check AWS CLI (need v2.15+)
-aws --version
-# Expected: aws-cli/2.15.x or higher
+> **💡 Recommendation**: Use automated scripts for everything after Control Tower setup. This reduces manual work from ~3 hours to ~1 hour, with email configuration now completely automated.
 
-# Check Git
-git --version
-# Expected: git version 2.40.x or higher
-```
+---
+
+## ✅ Phase 1: Prerequisites and Environment Setup
+
+### 1.1 System Requirements Check
+
+- [ ] **Check Node.js version** (Need 20+ minimum, 22+ recommended)
+  ```bash
+  node --version
+  # Expected: v22.x.x (recommended) or v20.x.x (minimum)
+  ```
+
+- [ ] **Check npm version**
+  ```bash
+  npm --version
+  # Expected: 10.x.x or higher
+  ```
+
+- [ ] **Check AWS CLI version** (need v2.15+)
+  ```bash
+  aws --version
+  # Expected: aws-cli/2.15.x or higher
+  ```
+
+- [ ] **Check Git version**
+  ```bash
+  git --version
+  # Expected: git version 2.40.x or higher
+  ```
 
 ### 1.2 Install Latest Tools
 
-```bash
-# Install Node.js 22 (recommended)
-# macOS with Homebrew
-brew install node@22
-brew link node@22
+- [ ] **Install Node.js 22** (choose one method)
+  ```bash
+  # macOS with Homebrew
+  brew install node@22
+  brew link node@22
+  
+  # OR use nvm
+  nvm install 22
+  nvm use 22
+  nvm alias default 22
+  
+  # OR Ubuntu/Debian
+  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+  sudo apt-get install -y nodejs
+  ```
 
-# Use nvm to install Node 22
-nvm install 22
-nvm use 22
-nvm alias default 22  # Set as default
-
-# Ubuntu/Debian
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-sudo apt-get install -y nodejs
-
-# Install/Update AWS CLI v2
-# macOS
-brew install awscli
-
-# Linux
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-unzip awscliv2.zip
-sudo ./aws/install --update
-```
+- [ ] **Install/Update AWS CLI v2**
+  ```bash
+  # macOS
+  brew install awscli
+  
+  # OR Linux
+  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  unzip awscliv2.zip
+  sudo ./aws/install --update
+  ```
 
 ### 1.3 Configure AWS CLI
 
 **⚠️ IMPORTANT**: Do not use root account credentials for CLI access. Follow security best practices:
 
-#### Option A: Create IAM User (Recommended)
+#### Create IAM User (Recommended)
 
-```bash
-# 1. Log into AWS Console with root account
-# 2. Go to IAM → Users → Create User
-
-# User Creation Form:
-# User name: control-tower-admin (or ct-admin, admin-user, etc.)
-# Valid characters: A-Z, a-z, 0-9, and + = , . @ _ - (hyphen)
-# Up to 64 characters allowed
-
-# Console Access Question:
-# "Are you providing console access to a person?"
-# Choose: "I want to create an IAM user"
-#
-# AWS will show a recommendation for Identity Center, but for Control Tower
-# setup, we need programmatic access (CLI), so select "I want to create an IAM user"
-# This is correct for CDK operations and automation scripts
-
-# 3. Set permissions on next page:
-#    Choose: "Attach policies directly"
-#    Search and select: "AdministratorAccess"
-#    ✅ Check the box next to AdministratorAccess policy
-
-# 4. Review and create user
-#    Tags (optional): Add Key="Purpose", Value="ControlTower"
-#    Click "Create user"
-
-# 5. After user creation, create access keys:
-#    Click on the newly created user → Security credentials tab
-#    Scroll to "Access keys" section → "Create access key"
-#
-#    AWS will show "Access key best practices & alternatives" page:
-#
-#    Use case selection:
-#    ✅ Select: "Command Line Interface (CLI)"
-#    Description: "You plan to use this access key to enable the AWS CLI to access your AWS account"
-#
-#    AWS Alternatives Recommended:
-#    - Use AWS CloudShell (browser-based CLI)
-#    - Use AWS CLI V2 with IAM Identity Center authentication
-#
-#    For Control Tower setup, we need persistent CLI access for CDK operations,
-#    so access keys are the appropriate choice here.
-#
-#    Confirmation:
-#    ✅ Check: "I understand the above recommendation and want to proceed to create an access key"
-#    Click "Next"
-#
-#    Description (optional): "Control Tower CDK Operations"
-#    Click "Create access key"
-#
-#    ⚠️ CRITICAL: Download .csv file or copy both keys immediately
-#    - Access Key ID: Will be visible later
-#    - Secret Access Key: This is your ONLY chance to see it!
-#
-#    Store these securely (password manager, encrypted file, etc.)
-#    Never commit these to git or share them
-
-# 6. Enable MFA on IAM user:
-#    Security credentials tab → Multi-factor authentication (MFA)
-#    "Assign MFA device" → Choose authenticator app
-#    Follow setup instructions
-
-# Configure AWS CLI with IAM user credentials
-aws configure
-# AWS Access Key ID: [IAM user access key from step 5]
-# AWS Secret Access Key: [IAM user secret key from step 5]
-# Default region name: us-east-1  # or your preferred region
-# 🇸🇬 For Singapore: use ap-southeast-1
-# Default output format: json
-
-# Verify configuration with IAM user
-aws sts get-caller-identity
-# use --profile
-aws sts get-caller-identity --profile profile-name
-
-# should show: "arn:aws:iam::account:user/control-tower-admin"
-# not: "arn:aws:iam::account:root"
-
-# 🇸🇬 singapore-specific: verify singapore region access
-# aws sts get-caller-identity --region ap-southeast-1
-```
+- [ ] **Log into AWS Console with root account**
+- [ ] **Go to IAM → Users → Create User**
+- [ ] **User Creation Form:**
+  - User name: `control-tower-admin`
+  - Choose: "I want to create an IAM user"
+- [ ] **Set permissions:**
+  - Choose: "Attach policies directly"
+  - Search and select: "AdministratorAccess"
+  - ✅ Check the box next to AdministratorAccess policy
+- [ ] **Review and create user**
+  - Tags (optional): Key="Purpose", Value="ControlTower"
+  - Click "Create user"
+- [ ] **Create access keys:**
+  - Click on the newly created user → Security credentials tab
+  - Scroll to "Access keys" section → "Create access key"
+  - Use case selection: ✅ Select "Command Line Interface (CLI)"
+  - ✅ Check: "I understand the above recommendation and want to proceed to create an access key"
+  - Click "Next"
+  - Description: "Control Tower CDK Operations"
+  - Click "Create access key"
+  - ⚠️ **CRITICAL**: Download .csv file or copy both keys immediately
+- [ ] **Enable MFA on IAM user:**
+  - Security credentials tab → Multi-factor authentication (MFA)
+  - "Assign MFA device" → Choose authenticator app
+  - Follow setup instructions
+- [ ] **Configure AWS CLI with IAM user credentials**
+  ```bash
+  aws configure
+  # AWS Access Key ID: [IAM user access key from above]
+  # AWS Secret Access Key: [IAM user secret key from above]
+  # Default region name: us-east-1  # or ap-southeast-1 for Singapore
+  # Default output format: json
+  ```
+- [ ] **Verify configuration**
+  ```bash
+  aws sts get-caller-identity
+  # Should show: "arn:aws:iam::account:user/control-tower-admin"
+  # NOT: "arn:aws:iam::account:root"
+  ```
 
 #### option b: using aws profiles (advanced)
 
@@ -201,118 +196,128 @@ aws --profile control-tower-admin sts get-caller-identity
 # - monitor usage in cloudtrail
 ```
 
-### 1.4 install latest cdk v2
+### 1.4 Install Latest CDK v2
 
-```bash
-# install cdk v2 globally
-npm install -g aws-cdk@latest
-
-# verify installation (should be 2.201.0+)
-cdk --version
-# expected: 2.201.x or higher
-```
-
----
-
-## phase 2: email accounts setup
-
-### 2.1 prepare email accounts
-
-you'll need 7 email addresses for the accounts. you can use gmail aliases:
-
-- **management account (root)**: `your-email@gmail.com`
-- **audit account**: `your-email+audit@gmail.com`
-- **log archive account**: `your-email+logs@gmail.com`
-- **production workload**: `your-email+prod@gmail.com`
-- **staging workload**: `your-email+staging@gmail.com`
-- **development workload**: `your-email+dev@gmail.com`
-- **shared services**: `your-email+shared@gmail.com`
-
-> **🇸🇬 singapore note**: same email structure works for singapore - the region doesn't affect email requirements.
-
-### 2.2 initial security setup
-
-before proceeding with control tower, secure your root account:
-
-```bash
-# ⚠️ critical security steps (do these first!)
-
-# 1. enable mfa on root account
-# go to: aws console → account menu (top right) → security credentials
-# multi-factor authentication (mfa) → assign mfa device
-# use authenticator app (google authenticator, authy, etc.)
-
-# 2. create iam user for daily operations
-# go to: iam → users → create user
-# user name: control-tower-admin
-# permissions: attach administratoraccess policy directly
-# create access keys for cli access
-
-# 3. enable mfa on iam user
-# iam → users → control-tower-admin → security credentials
-# assign mfa device
-
-# 4. test iam user access
-aws sts get-caller-identity
-# should show iam user arn, not root
-
-# 5. delete root access keys (if any exist)
-# aws console → account menu → security credentials
-# delete any existing access keys
-
-echo "✅ security setup complete - ready for control tower"
-```
+- [ ] **Install CDK v2 globally**
+  ```bash
+  npm install -g aws-cdk@latest
+  ```
+- [ ] **Verify installation** (should be 2.201.0+)
+  ```bash
+  cdk --version
+  # Expected: 2.201.x or higher
+  ```
 
 ---
 
-## phase 3: cdk project structure
+## ✅ Phase 2: Email Accounts Setup
 
-### 3.1 initialize project
+### 2.1 Prepare Email Accounts
 
-```bash
-# create project directory
-mkdir simple-control-tower-cdk
-cd simple-control-tower-cdk
+- [ ] **Prepare 7 email addresses** (you can use Gmail aliases):
+  - [ ] **Management account (root)**: `your-email@gmail.com`
+  - [ ] **Audit account**: `your-email-audit@gmail.com`
+  - [ ] **Log archive account**: `your-email-logs@gmail.com`
+  - [ ] **Production workload**: `your-email+prod@gmail.com`
+  - [ ] **Staging workload**: `your-email+staging@gmail.com`
+  - [ ] **Development workload**: `your-email+dev@gmail.com`
+  - [ ] **Shared services**: `your-email+shared@gmail.com`
 
-# initialize typescript cdk project
-cdk init app --language typescript
-```
+> **🇸🇬 Singapore note**: Same email structure works for Singapore - the region doesn't affect email requirements.
 
-### 3.2 install dependencies
+### 2.2 Initial Security Setup
 
-```bash
-# install core cdk v2 dependencies
-npm install aws-cdk-lib@latest constructs@latest
+- [ ] **Enable MFA on root account**
+  - Go to: AWS Console → Account menu (top right) → Security credentials
+  - Multi-factor authentication (MFA) → Assign MFA device
+  - Use authenticator app (Google Authenticator, Authy, etc.)
 
-# install development dependencies
-npm install --save-dev @types/node@latest
+- [ ] **Create IAM user for daily operations** (if not done in Phase 1)
+  - Go to: IAM → Users → Create user
+  - User name: `control-tower-admin`
+  - Permissions: Attach AdministratorAccess policy directly
+  - Create access keys for CLI access
 
-# verify versions
-npm list aws-cdk-lib
-```
+- [ ] **Enable MFA on IAM user**
+  - IAM → Users → control-tower-admin → Security credentials
+  - Assign MFA device
 
-### 3.3 create directory structure
+- [ ] **Test IAM user access**
+  ```bash
+  aws sts get-caller-identity
+  # Should show IAM user ARN, not root
+  ```
 
-```bash
-# create directory structure
-mkdir -p lib/{stacks,constructs,config}
-mkdir -p scripts
+- [ ] **Delete root access keys** (if any exist)
+  - AWS Console → Account menu → Security credentials
+  - Delete any existing access keys
 
-# create required files
-touch lib/config/accounts.ts
-touch lib/constructs/hello-world-app.ts
-touch lib/stacks/application-stack.ts
-touch scripts/deploy.sh
-touch scripts/validate.sh
-```
+- [ ] **Verify security setup is complete**
+  ```bash
+  echo "✅ Security setup complete - ready for Control Tower"
+  ```
 
 ---
 
-## phase 4: configuration files
+## ✅ Phase 3: CDK Project Structure
 
-### 4.1 account configuration
+### 3.1 Initialize Project
 
-create `lib/config/accounts.ts`:
+- [ ] **Create project directory**
+  ```bash
+  mkdir simple-control-tower-cdk
+  cd simple-control-tower-cdk
+  ```
+
+- [ ] **Initialize TypeScript CDK project**
+  ```bash
+  cdk init app --language typescript
+  ```
+
+### 3.2 Install Dependencies
+
+- [ ] **Install core CDK v2 dependencies**
+  ```bash
+  npm install aws-cdk-lib@latest constructs@latest
+  ```
+
+- [ ] **Install development dependencies**
+  ```bash
+  npm install --save-dev @types/node@latest
+  ```
+
+- [ ] **Verify versions**
+  ```bash
+  npm list aws-cdk-lib
+  ```
+
+### 3.3 Create Directory Structure
+
+- [ ] **Create directory structure**
+  ```bash
+  mkdir -p lib/{stacks,constructs,config}
+  mkdir -p scripts
+  ```
+
+- [ ] **Create required files**
+  ```bash
+  touch lib/config/accounts.ts
+  touch lib/constructs/hello-world-app.ts
+  touch lib/stacks/application-stack.ts
+  touch scripts/get-account-ids.sh
+  touch scripts/bootstrap-accounts.sh
+  touch scripts/deploy-applications.sh
+  touch scripts/validate-deployment.sh
+  touch scripts/sync-account-emails.sh
+  ```
+
+---
+
+## ✅ Phase 4: Configuration Files
+
+### 4.1 Account Configuration
+
+- [ ] **Create `lib/config/accounts.ts`** with the following content (emails will be auto-updated later):
 
 ```typescript
 export interface accountconfig {
@@ -365,8 +370,8 @@ export const accounts: Record<string, accountconfig> = {
 
 export const core_accounts = {
   management: "your-email@gmail.com", // replace with your email
-  audit: "your-email+audit@gmail.com", // replace with your email
-  logarchive: "your-email+logs@gmail.com", // replace with your email
+  audit: "your-email-audit@gmail.com", // replace with your email
+  logarchive: "your-email-logs@gmail.com", // replace with your email
 };
 ```
 
@@ -374,15 +379,308 @@ export const core_accounts = {
 > ```bash
 > ./scripts/sync-account-emails.sh
 > ```
-> This script fetches the actual emails from your AWS accounts and shows you what to update in the config.
+> This script fetches the actual emails from your AWS accounts and **automatically updates** the config file. It creates a backup first for safety.
 
 ---
 
-## phase 5: hello world application
+## ✅ Phase 5: Manual Control Tower Setup
 
-### 5.1 create hello world construct
+### 5.1 Access Control Tower Console
 
-create `lib/constructs/hello-world-app.ts`:
+- [ ] **Log into AWS Console with ROOT account credentials**
+- [ ] **Navigate to Control Tower console**
+  - Go to: https://console.aws.amazon.com/controltower/
+  - 🇸🇬 Singapore: https://ap-southeast-1.console.aws.amazon.com/controltower/
+- [ ] **Verify you are in the correct region** (top-right corner)
+  - US East 1: `us-east-1`
+  - 🇸🇬 Singapore: `ap-southeast-1`
+
+### 5.2 Landing Zone Configuration
+
+- [ ] **Click "Set up landing zone" button**
+- [ ] **Select Home Region:**
+  - US East 1: `us-east-1`
+  - 🇸🇬 Singapore: `ap-southeast-1` (**cannot be changed later**)
+- [ ] **Configure Organizational Units (OUs):**
+  - Security OU: `Security` (default)
+  - Sandbox OU: `Sandbox` (default)
+
+### 5.3 Account Configuration
+
+- [ ] **Configure core accounts using your prepared emails:**
+  - [ ] **Management Account:** Already your current account
+  - [ ] **Audit Account:**
+    - Email: `your-email-audit@gmail.com`
+    - Account Name: `Audit`
+    - OU: Security OU
+  - [ ] **Log Archive Account:**
+    - Email: `your-email-logs@gmail.com`
+    - Account Name: `Log Archive`
+    - OU: Security OU
+
+### 5.4 Compliance and Governance
+
+#### 5.4.1 Guardrails Selection
+
+- [ ] **Navigate to Guardrails section** in Control Tower setup wizard
+- [ ] **Review Preventive Guardrails** (automatically applied policies that prevent actions):
+  - [ ] **Disallow changes to CloudTrail** - Prevents modification of organization trail
+  - [ ] **Disallow deletion of log streams** - Protects CloudWatch logs
+  - [ ] **Disallow configuration changes to CloudWatch** - Prevents log tampering
+  - [ ] **Check "Enable all strongly recommended guardrails"** checkbox
+  - [ ] **Check "Enable all elective guardrails"** checkbox (optional but recommended)
+- [ ] **Review Detective Guardrails** (monitoring and alerting on non-compliant actions):
+  - [ ] **Detect whether MFA is enabled for root user** - Security monitoring
+  - [ ] **Detect whether public access to S3 buckets is allowed** - Data protection
+  - [ ] **Detect whether encryption is enabled for EBS volumes** - Data security
+  - [ ] **Check "Enable all strongly recommended detective guardrails"** checkbox
+  - [ ] **Check "Enable all elective detective guardrails"** checkbox (optional)
+
+#### 5.4.2 CloudTrail Configuration
+
+- [ ] **Navigate to CloudTrail section** in Control Tower setup wizard
+- [ ] **Organization CloudTrail Settings:**
+  - [ ] **Check "Enable organization-wide CloudTrail"** checkbox
+  - [ ] **Trail name:** Accept default `aws-controltower-BaselineCloudTrail`
+  - [ ] **S3 bucket location:** Will be auto-created in Log Archive account
+  - [ ] **S3 bucket name:** Accept default `aws-controltower-logs-ACCOUNT-REGION`
+- [ ] **Log Configuration:**
+  - [ ] **Log retention:** Select `90 days` (default, good balance of cost vs compliance)
+  - [ ] **Include global services:** ✅ Enabled (captures IAM, Route 53, etc.)
+  - [ ] **Include management events:** ✅ Enabled (captures API calls)
+  - [ ] **Include data events:** ❌ Disabled (optional, increases costs significantly)
+- [ ] **Encryption Settings:**
+  - [ ] **Server-side encryption:** ✅ Enabled (uses AWS managed keys)
+  - [ ] **Log file validation:** ✅ Enabled (ensures log integrity)
+
+#### 5.4.3 AWS Config Configuration
+
+- [ ] **Navigate to AWS Config section** in Control Tower setup wizard
+- [ ] **Configuration Recording:**
+  - [ ] **Check "Enable AWS Config in all accounts"** checkbox
+  - [ ] **Recording scope:** Select `Record all resources` (comprehensive compliance)
+  - [ ] **Include global resources:** ✅ Enabled (IAM resources, etc.)
+- [ ] **Delivery Settings:**
+  - [ ] **S3 bucket:** Will use same bucket as CloudTrail in Log Archive account
+  - [ ] **S3 key prefix:** Accept default `AWSConfig`
+  - [ ] **SNS topic:** Accept default (notifications for config changes)
+- [ ] **Config Rules (Guardrails):**
+  - [ ] **Automatic rules:** Will be deployed based on selected guardrails
+  - [ ] **Custom rules:** None needed for basic setup
+  - [ ] **Remediation:** Accept default settings (manual remediation)
+
+### 5.5 Cost and Billing Setup
+
+#### 5.5.1 Enable Cost and Usage Reports
+
+- [ ] **Navigate to Cost Management section** in Control Tower setup wizard
+- [ ] **Cost and Usage Reports (CUR):**
+  - [ ] **Check "Enable Cost and Usage Reports"** checkbox
+  - [ ] **Report name:** Accept default `aws-controltower-cur`
+  - [ ] **S3 bucket:** Will be auto-created in management account
+  - [ ] **Report format:** Select `Parquet` (efficient for large datasets)
+  - [ ] **Compression:** Select `GZIP`
+  - [ ] **Time granularity:** Select `Daily` (detailed cost tracking)
+  - [ ] **Report versioning:** Select `Overwrite existing report`
+- [ ] **Additional Data:**
+  - [ ] **Include resource IDs:** ✅ Enabled (detailed resource tracking)
+  - [ ] **Include split cost allocation data:** ✅ Enabled (reservation details)
+
+#### 5.5.2 Set up Billing Alerts
+
+- [ ] **After Control Tower setup, navigate to AWS Billing & Cost Management console**
+- [ ] **Go to Billing preferences:**
+  - [ ] **Click "Billing preferences" in left navigation**
+  - [ ] **Check "Receive Billing Alerts"** checkbox
+  - [ ] **Save preferences**
+- [ ] **Set up CloudWatch billing alarms:**
+  - [ ] **Go to CloudWatch console → Alarms → Billing**
+  - [ ] **Click "Create alarm"**
+  - [ ] **Create Organization-wide Alert:**
+    - [ ] **Metric:** Select `EstimatedCharges`
+    - [ ] **Currency:** Select `USD` (or your preferred currency)
+    - [ ] **Statistic:** `Maximum`
+    - [ ] **Period:** `6 hours`
+    - [ ] **Threshold:** `Static` > `Greater than` > `100` (adjust as needed)
+    - [ ] **Alarm name:** `Organization-Monthly-Spend-Alert-$100`
+  - [ ] **Create Per-Account Alerts** (repeat for each account):
+    - [ ] **Development:** Threshold `$25`
+    - [ ] **Staging:** Threshold `$50`
+    - [ ] **Shared Services:** Threshold `$50`
+    - [ ] **Production:** Threshold `$200`
+- [ ] **Configure notification actions:**
+  - [ ] **SNS topic:** Create new topic `billing-alerts`
+  - [ ] **Email subscriptions:** Add your email addresses
+  - [ ] **Confirm email subscriptions** when prompted
+
+#### 5.5.3 Create Budgets
+
+- [ ] **Navigate to AWS Budgets console**
+- [ ] **Click "Create budget"**
+- [ ] **Create Organization Budget:**
+  - [ ] **Budget type:** Select `Cost budget`
+  - [ ] **Budget name:** `Organization-Monthly-Budget`
+  - [ ] **Period:** `Monthly`
+  - [ ] **Budget amount:** Enter `$500` (adjust based on expected usage)
+  - [ ] **Budget scope:** Select `All AWS services`
+  - [ ] **Filters:** Add `Account` filter and select all accounts
+- [ ] **Configure budget alerts:**
+  - [ ] **Alert 1:** `50%` of budgeted amount
+    - [ ] **Threshold:** `50` percent of budget
+    - [ ] **Email recipients:** Your primary email
+    - [ ] **Alert name:** `50% Budget Alert`
+  - [ ] **Alert 2:** `80%` of budgeted amount
+    - [ ] **Threshold:** `80` percent of budget  
+    - [ ] **Email recipients:** Your primary email + team lead
+    - [ ] **Alert name:** `80% Budget Alert - Action Required`
+  - [ ] **Alert 3:** `100%` of budgeted amount
+    - [ ] **Threshold:** `100` percent of budget
+    - [ ] **Email recipients:** All stakeholders
+    - [ ] **Alert name:** `Budget Exceeded - Immediate Action Required`
+- [ ] **Create Per-Account Budgets** (repeat for each workload account):
+  - [ ] **Development Account Budget:**
+    - [ ] **Budget name:** `Development-Monthly-Budget`
+    - [ ] **Amount:** `$50`
+    - [ ] **Scope:** Filter by Development account only
+    - [ ] **Alerts:** 50%, 80%, 100% thresholds
+  - [ ] **Staging Account Budget:**
+    - [ ] **Budget name:** `Staging-Monthly-Budget`
+    - [ ] **Amount:** `$100`
+    - [ ] **Scope:** Filter by Staging account only
+    - [ ] **Alerts:** 50%, 80%, 100% thresholds
+  - [ ] **Shared Services Budget:**
+    - [ ] **Budget name:** `Shared-Services-Monthly-Budget`
+    - [ ] **Amount:** `$75`
+    - [ ] **Scope:** Filter by Shared Services account only
+    - [ ] **Alerts:** 50%, 80%, 100% thresholds
+  - [ ] **Production Account Budget:**
+    - [ ] **Budget name:** `Production-Monthly-Budget`
+    - [ ] **Amount:** `$250`
+    - [ ] **Scope:** Filter by Production account only
+    - [ ] **Alerts:** 50%, 80%, 100% thresholds
+
+#### 5.5.4 Additional Cost Optimization Settings
+
+- [ ] **Enable Cost Allocation Tags:**
+  - [ ] **Go to Billing & Cost Management → Cost allocation tags**
+  - [ ] **Activate AWS-generated tags:**
+    - [ ] `aws:createdBy`
+    - [ ] `aws:cloudformation:stack-name`
+    - [ ] `aws:cloudformation:logical-id`
+  - [ ] **Create user-defined tags for activation:**
+    - [ ] `Environment` (will be applied by CDK)
+    - [ ] `Project` (will be applied by CDK)
+    - [ ] `ManagedBy` (will be applied by CDK)
+- [ ] **Set up Cost Explorer:**
+  - [ ] **Go to Cost Explorer → Enable Cost Explorer**
+  - [ ] **Wait 24 hours for data population**
+  - [ ] **Create custom reports for:**
+    - [ ] Daily costs by account
+    - [ ] Monthly costs by service
+    - [ ] Reserved instance recommendations
+- [ ] **Configure AWS Trusted Advisor** (if Business/Enterprise support):
+  - [ ] **Review cost optimization recommendations**
+  - [ ] **Set up automated notifications for new recommendations**
+
+### 5.6 Launch Setup
+
+- [ ] **Review all configurations carefully**
+- [ ] **Review estimated costs**
+- [ ] **Click "Set up landing zone"**
+- [ ] **Monitor setup progress** (30-70 minutes expected)
+  - Check email confirmations for new accounts
+  - Monitor the setup dashboard
+
+### 5.7 Post-Setup Verification
+
+- [ ] **Verify Control Tower status shows "Setup Succeeded"**
+- [ ] **Check AWS Organizations console**
+  - Confirm all 3 core accounts are listed
+  - Verify account IDs and email addresses
+- [ ] **Test account access**
+  - Switch roles to Audit and Log Archive accounts
+  - Verify OrganizationAccountAccessRole works
+- [ ] **Verify guardrails status shows "Compliant"**
+- [ ] **Check CloudTrail in Log Archive account**
+  - Verify organization trail is active
+  - Check S3 bucket for log delivery
+
+### 5.8 Post-Setup Automation Options
+
+After Control Tower setup completes, you have two options:
+
+#### Option A: Automated Post-Setup (Recommended)
+
+- [ ] **Run automated post-setup script:**
+  ```bash
+  ./scripts/setup-post-controltower.sh
+  ```
+  This script will automatically:
+  - ✅ Create Non-Production and Production OUs
+  - ✅ Create all workload accounts (Dev, Staging, Shared, Prod)
+  - ✅ Set up billing alerts and SNS notifications
+  - ✅ Configure cost allocation tags
+  - ✅ Enable Cost Explorer
+
+- [ ] **Run budget creation script** (after accounts are created):
+  ```bash
+  ./scripts/create-budgets.sh
+  ```
+
+- [ ] **Run SSO configuration script:**
+  ```bash
+  ./scripts/setup-sso.sh
+  ```
+
+#### Option B: Manual Post-Setup
+
+If you prefer manual setup or the scripts don't work in your environment:
+
+- [ ] **Create Non-Production and Production OUs:**
+  - AWS Organizations console → Organizational units
+  - Create OU: `Non-Production` (parent: Root)
+  - Create OU: `Production` (parent: Root)
+
+- [ ] **Use Account Factory to create workload accounts:**
+  - Control Tower console → Account Factory → "Create account"
+  - [ ] **Development Account:**
+    - Email: `your-email+dev@gmail.com`
+    - Name: `Development`
+    - OU: `Non-Production`
+  - [ ] **Staging Account:**
+    - Email: `your-email+staging@gmail.com`
+    - Name: `Staging`
+    - OU: `Non-Production`
+  - [ ] **Shared Services Account:**
+    - Email: `your-email+shared@gmail.com`
+    - Name: `Shared Services`
+    - OU: `Non-Production`
+  - [ ] **Production Account:**
+    - Email: `your-email+prod@gmail.com`
+    - Name: `Production`
+    - OU: `Production`
+
+- [ ] **Configure IAM Identity Center (SSO):**
+  - [ ] Access IAM Identity Center console
+  - [ ] Verify Identity Center is enabled
+  - [ ] Create Permission Sets:
+    - [ ] `DeveloperAccess` with `PowerUserAccess` policy
+    - [ ] `AdminAccess` with `AdministratorAccess` policy
+    - [ ] `ReadOnlyAccess` with `ReadOnlyAccess` policy
+  - [ ] Assign users to accounts with correct permission sets
+  - [ ] Configure CLI access:
+    ```bash
+    aws configure sso
+    # Follow prompts to set up SSO profile
+    ```
+
+---
+
+## ✅ Phase 6: CDK Application Code
+
+### 6.1 Hello World Application
+
+- [ ] **Create `lib/constructs/hello-world-app.ts`** with the following content:
 
 ```typescript
 import { Construct } from "constructs";
@@ -549,9 +847,9 @@ uptime: process.uptime()
 }
 ```
 
-### 5.2 create application stack
+### 6.2 Create Application Stack
 
-create `lib/stacks/application-stack.ts`:
+- [ ] **Create `lib/stacks/application-stack.ts`** with the following content:
 
 ```typescript
 import { Stack, StackProps, Tags } from "aws-cdk-lib";
@@ -584,11 +882,9 @@ export class applicationstack extends Stack {
 
 ---
 
-## phase 6: cdk app entry point
+### 6.3 Update Main CDK App
 
-### 6.1 update main cdk app
-
-update `bin/simple-control-tower-cdk.ts`:
+- [ ] **Update `bin/simple-control-tower-cdk.ts`** with the following content:
 
 ```typescript
 #!/usr/bin/env node
@@ -627,11 +923,13 @@ cdk.Tags.of(app).add("project", "simplecontroltower");
 
 ---
 
-## phase 7: deployment scripts
+---
 
-### 7.1 get account ids script
+## ✅ Phase 7: Deployment Scripts
 
-create `scripts/get-account-ids.sh`:
+### 7.1 Get Account IDs Script
+
+- [ ] **Create `scripts/get-account-ids.sh`** with the following content:
 
 ```bash
 #!/bin/bash
@@ -695,9 +993,9 @@ echo "└── shared services: $shared_account"
 echo "💾 account ids saved to .env file"
 ```
 
-### 7.2 bootstrap accounts script
+### 7.2 Bootstrap Accounts Script
 
-create `scripts/bootstrap-accounts.sh`:
+- [ ] **Create `scripts/bootstrap-accounts.sh`** with the following content:
 
 ```bash
 #!/bin/bash
@@ -744,9 +1042,9 @@ bootstrap_account $prod_account "production"
 echo "✅ all accounts bootstrapped successfully!"
 ```
 
-### 7.3 deploy applications script
+### 7.3 Deploy Applications Script
 
-create `scripts/deploy-applications.sh`:
+- [ ] **Create `scripts/deploy-applications.sh`** with the following content:
 
 ```bash
 #!/bin/bash
@@ -813,9 +1111,9 @@ fi
 done
 ```
 
-### 7.4 validation script
+### 7.4 Validation Script
 
-create `scripts/validate-deployment.sh`:
+- [ ] **Create `scripts/validate-deployment.sh`** with the following content:
 
 ```bash
 #!/bin/bash
@@ -902,11 +1200,9 @@ echo "4. add your custom applications to each environment"
 
 ---
 
-## phase 8: complete setup script
+### 7.5 Complete Setup Script
 
-### 8.1 master setup script
-
-create `scripts/complete-setup.sh`:
+- [ ] **Create `scripts/complete-setup.sh`** with the following content:
 
 ```bash
 #!/bin/bash
@@ -1020,11 +1316,9 @@ done
 
 ---
 
-## phase 9: package.json scripts
+### 7.6 Update Package.json Scripts
 
-### 9.1 update package.json
-
-update `package.json` to include deployment scripts:
+- [ ] **Update `package.json`** to include deployment scripts:
 
 ```json
 {
@@ -1052,766 +1346,126 @@ update `package.json` to include deployment scripts:
 
 ---
 
-## quick start commands
-
-### complete setup (after control tower manual setup)
-
-````bash
-# 🔐 security setup first (one-time setup)
-# 1. enable mfa on root account in aws console
-# 2. create iam user 'control-tower-admin' with administratoraccess
-# 3. enable mfa on iam user
-# 4. create access keys for iam user
-# 5. delete any root account access keys
-
-# 1. prerequisites check
-node --version  # should be v20+ or v22+
-aws --version   # should be v2.15+
-cdk --version   # should be v2.201+
-
-# 🇸🇬 singapore: set region before starting
-# aws configure set region ap-southeast-1
-
-# configure cli with iam user credentials (not root)
-aws configure
-# use your iam user access keys here
-
-# 2. project setup
-mkdir simple-control-tower-cdk
-cd simple-control-tower-cdk
-cdk init app --language typescript
-
-# 3. install dependencies
-npm install aws-cdk-lib@latest constructs@latest
-
-# 4. update email addresses in lib/config/accounts.ts
-# replace "your-email" with your actual email address
-# 🇸🇬 singapore: also update hello world messages with singapore flags
-
-# 5. Manual Control Tower Setup (Required First!)
-
-## ⚠️ Prerequisites
-- **Use ROOT account credentials** to log into AWS Console for this step
-- Ensure you have access to the email addresses configured in `accounts.ts`
-- Have your credit card ready for account verification (if required)
-- Budget 30-45 minutes for the complete setup process
-
-## 🇸🇬 Singapore Region Setup
-
-### Step 1: Access Control Tower Console
-
-1. Log into AWS Console with **ROOT account credentials**
-2. Navigate to: <https://ap-southeast-1.console.aws.amazon.com/controltower/>
-3. **Verify you are in Singapore** `ap-southeast-1` **region** in the top-right corner
-
-### Step 2: Landing Zone Configuration
-
-1. Click **"Set up landing zone"** button
-2. **Home Region Selection:**
-- Select **"Asia Pacific (Singapore) ap-southeast-1"** as home region
-- This cannot be changed later, so double-check!
-
-### Step 3: Organizational Unit (OU) Configuration
-
-1. **Foundation OU Names:**
-- Security OU: `Security` (recommended default)
-- Sandbox OU: `Sandbox` (recommended default)
-2. **Additional OUs (Optional):**
-- You can create custom OUs later for workload accounts
-- For this project, default OUs are sufficient
-
-### Step 4: Account Configuration
-
-Configure the three core accounts using emails from your `accounts.ts`:
-
-#### Management Account (Already Your Current Account)
-
-- **Email:** `testawsrahardja@gmail.com` (your root account email)
-- **Purpose:** Control Tower management and billing consolidation
-
-#### Audit Account
-
-- **Email:** `testawsrahardjaaudit@gmail.com`
-- **Account Name:** `Audit Account`
-- **Purpose:** Security monitoring and compliance
-- **OU Placement:** Security OU
-
-#### Log Archive Account
-
-- **Email:** `testawsrahardjalogs@gmail.com`
-- **Account Name:** `Log Archive Account`
-- **Purpose:** Centralized logging and CloudTrail storage
-- **OU Placement:** Security OU
-
-### Step 5: Compliance and Governance Configuration
-
-1. **Guardrails Selection:**
-
-- **Preventive Guardrails:** Enable all recommended (default)
-- **Detective Guardrails:** Enable all recommended (default)
-- These provide security and compliance baselines
-
-2. **CloudTrail Configuration:**
-
-- **Organization CloudTrail:** Enable (recommended)
-- **Log retention:** 90 days (default)
-- **S3 bucket:** Auto-created in Log Archive account
-
-3. **AWS Config Configuration:**
-- **Enable AWS Config:** Yes (required for guardrails)
-- **Config rules:** Auto-configured for compliance
-
-### Step 6: Cost and Billing Setup
-
-Configure financial monitoring and cost controls for your AWS organization:
-
-#### 1. **Cost Reporting** (Recommended)
-- **What it does:** Enables AWS Cost and Usage Reports (CUR) for the entire organization
-- **Benefits:**
-- Track costs per account, service, and resource
-- Generate detailed financial reports with hourly/daily usage data
-- Enable third-party cost management tools
-- **Action:** Check "Enable Cost and Usage Reports" during setup
-- **Result:** Control Tower automatically creates CUR reports stored in management account S3
-
-#### 2. **Billing Alerts** (Optional but Recommended)
-- **What it does:** Creates CloudWatch alarms for spending thresholds
-- **Configuration:**
-- Set monthly spending thresholds (e.g., $50, $100, $500)
-- Choose notification email addresses
-- Define alert frequency (daily, weekly, monthly)
-- **Examples:**
-- "Alert when monthly spend exceeds $100"
-- "Daily alert when approaching budget limit"
-- "Immediate alert for unusual spending spikes"
-
-#### 3. **Budget Allocation** (Recommended for Production)
-- **What it does:** Creates AWS Budgets for proactive cost control
-- **Recommended budget structure:**
-```
-Management Account: $20/month (governance only)
-Audit Account: $10/month (monitoring/logging)
-Log Archive: $30/month (storage costs)
-Dev Account: $50/month (development work)
-Staging Account: $100/month (testing)
-Prod Account: $500/month (production workload)
-```
-- **Budget actions:**
-- Email notifications at 50%, 80%, 100% of budget
-- Optional: Automatically stop resources at budget limit
-- Integration with AWS Cost Explorer for analysis
-
-#### 4. **Best Practices**
-- **Start conservative:** Set lower budgets initially, adjust based on usage
-- **Use consistent tagging:** Implement tagging strategy for cost allocation
-- **Monitor regularly:** Review cost reports weekly/monthly
-- **Set multiple thresholds:** Configure alerts at 50%, 80%, and 100% of budget
-
-### Step 7: Review and Launch
-
-1. **Review all configurations carefully**
-2. **Estimated costs:** Review the cost breakdown
-3. **Time estimate:** 20-60 minutes for setup completion
-4. Click **"Set up landing zone"**
-
-## 🕐 Setup Progress Monitoring
-
-### Expected Timeline
-
-- **Initial setup:** 5-10 minutes
-- **Account creation:** 10-20 minutes per account
-- **Guardrails deployment:** 20-40 minutes
-- **Total time:** 30-70 minutes
-
-### Progress Tracking
-
-1. **Monitor the setup dashboard** - shows real-time progress
-2. **Check email confirmations** for new account creations
-3. **Verify account access** as accounts are created
-
-### Common Setup Issues and Solutions
-
-#### Issue: Email Already in Use
-
-- **Solution:** Use Gmail aliases (<email+alias@gmail.com>)
-- **Example:** If `test@gmail.com` exists, use `test+audit@gmail.com`
-
-#### Issue: Region Selection Error
-
-- **Solution:** Ensure you are in ap-southeast-1 before starting
-- **Note:** This cannot be changed after setup begins
-
-#### Issue: Credit Card Verification Required
-
-- **Solution:** Have a valid credit card ready for account verification
-- **Note:** This is normal for new AWS accounts
-
-#### Issue: Setup Timeout or Failure
-
-- **Solution:** Contact AWS Support if setup fails after 2 hours
-- **Alternative:** Delete failed setup and restart (if option available)
-
-## 📧 Email Management Strategy
-
-### Gmail Alias Configuration
-
-All accounts use the same base email with aliases:
-
-```
-
-Management: <testawsrahardja@gmail.com>
-Audit: <testawsrahardjaaudit@gmail.com>
-Log Archive: <testawsrahardjalogs@gmail.com>
-Dev: <testawsrahardja+dev@gmail.com>
-Staging: <testawsrahardja+staging@gmail.com>
-Shared: <testawsrahardja+shared@gmail.com>
-Prod: <testawsrahardja+prod@gmail.com>
-
-```
-
-### Email Forwarding Setup
-
-1. **All emails go to your main inbox**
-2. **Set up Gmail filters** to organize by account:
-- Filter: `to:testawsrahardjaaudit@gmail.com`
-- Action: Apply label "AWS-Audit"
-3. **Repeat for each account type**
-
-## ✅ Post-Setup Verification
-
-### Step 1: Verify Account Creation
-
-1. Check **AWS Organizations** console
-2. Confirm all 3 core accounts are listed
-3. Verify account IDs and email addresses
-
-### Step 2: Test Account Access
-
-1. **Switch roles** to Audit and Log Archive accounts
-2. Verify **OrganizationAccountAccessRole** works
-3. Confirm **read-only access** in Audit account
-
-### Step 3: Verify Guardrails
-
-1. Go to **Control Tower dashboard**
-2. Check **guardrails status** - should show "Compliant"
-3. Review **non-compliance** items if any
-
-### Step 4: CloudTrail Verification
-
-1. Navigate to **CloudTrail** in Log Archive account
-2. Verify **organization trail** is active
-3. Check **S3 bucket** for log delivery
-
-## 🚀 Next Steps After Setup
-
-1. **Create workload accounts** (dev, staging, shared, prod)
-2. **Configure SSO** (optional but recommended)
-3. **Set up billing alerts** and budgets
-4. **Deploy CDK bootstrap** to all accounts
-5. **Begin application deployment**
-
-## 🔧 Troubleshooting: OU Re-registration Guide
-
-### When You Need This Guide
-If you see **"Inheritance drift"** warnings in Control Tower console, some accounts do not match the baseline configuration applied to their OU. This commonly occurs in the **Sandbox OU**.
-
-### ⚠️ Prerequisites and Preparation
-
-#### Before You Start:
-1. **Use Management Account credentials** (ROOT or IAM user with Control Tower permissions)
-2. **Schedule maintenance window** - Process can take 20-60 minutes
-3. **Document current configurations** in affected accounts
-4. **Notify users** of potential service disruptions
-5. **Backup critical settings** that might be reset
-
-#### What Will Happen:
-- All accounts in the OU will be reset to baseline configuration
-- Custom IAM policies may be overwritten
-- Non-compliant configurations will be removed
-- Guardrails will be re-applied consistently
-
-### 🚀 Step-by-Step Re-registration Process
-
-#### Step 1: Access Control Tower Console
-1. Log into AWS Console with **Management Account**
-2. Navigate to **Control Tower** service
-3. Go to **Organization** section in left navigation
-4. Select **Organizational units**
-
-#### Step 2: Locate Affected OU
-1. Find the OU showing **inheritance drift** (e.g., "Sandbox")
-2. Click on the **OU name** to view details
-3. Look for **compliance status** indicators
-4. Note any **"Inheritance drift"** warnings or red status indicators
-
-#### Step 3: Identify Affected Accounts
-1. In OU details, review **"Accounts"** tab
-2. Note which accounts show **drift status**
-3. Click on individual accounts to see **specific drift details**
-4. Document any **critical configurations** that might be lost
-
-#### Step 4: Initiate Re-registration
-1. In the OU details page, look for **"Re-register OU"** button
-2. Click **"Re-register OU"**
-3. **Select baseline version:** Choose "Latest" for most current guardrails
-4. **Review baseline configuration** that will be applied
-5. **Review affected accounts list**
-6. **Acknowledge potential data loss warning**
-7. Click **"Re-register organizational unit"**
-8. **Confirm the action** in popup dialog
-
-### 📊 Monitoring Re-registration Progress
-
-#### Expected Timeline:
-- **Initiation:** 2-5 minutes
-- **Per account processing:** 5-15 minutes each
-- **Total time:** 20-60 minutes (depends on number of accounts)
-
-#### Progress Indicators:
-1. **OU Status:** Changes to "Update in progress"
-2. **Account Status:** Individual accounts show "Updating"
-3. **Guardrail Status:** Shows "Applying" or "In progress"
-4. **Dashboard Notifications:** Real-time updates
-
-### ✅ Post-Re-registration Verification
-
-#### Step 1: Verify OU Compliance
-1. Check **OU status** shows "Compliant"
-2. Verify **no inheritance drift** warnings
-3. Confirm all **guardrails show green status**
-
-#### Step 2: Test Account Access
-1. **Switch roles** to accounts in the OU
-2. Verify **OrganizationAccountAccessRole** works
-3. Test **basic AWS service access**
-4. Confirm **logging is functioning**
-
-#### Step 3: Restore Necessary Customizations
-1. **Re-apply approved custom configurations**
-2. **Restore necessary IAM policies** (following best practices)
-3. **Update application configurations** if needed
-4. **Test application functionality**
-
-### ⚠️ Troubleshooting Common Issues
-
-#### Issue 1: Re-registration Fails
-**Solutions:**
-- Check **AWS Service Health** for outages
-- Verify **sufficient permissions** in management account
-- Try again during **off-peak hours**
-- Contact **AWS Support** if problem persists
-
-#### Issue 2: Account Access Lost
-**Solutions:**
-- Wait for **complete process completion** (up to 60 minutes)
-- Verify **OrganizationAccountAccessRole** exists
-- Use **root account** of individual accounts if needed
-
-#### Issue 3: Applications Stop Working
-**Solutions:**
-- Check **IAM role permissions** were reset
-- Verify **resource-based policies** are intact
-- Restore **necessary custom configurations**
-- Review **CloudTrail logs** for permission errors
-
-### 🔄 Prevention of Future Drift
-
-#### Best Practices:
-1. **Use Account Factory** for new accounts
-2. **Make changes through Control Tower** rather than directly
-3. **Use Service Catalog** for approved customizations
-4. **Regular compliance monitoring** (weekly/monthly)
-5. **Avoid manual IAM changes** in managed accounts
-
-## 🚀 Next Steps After Control Tower Setup
-
-### What to Do Immediately After Manual Control Tower Setup
-
-Once Control Tower setup is complete and any inheritance drift issues are resolved, follow these prioritized steps:
-
-#### Step 1: **Create Workload OUs and Accounts** (Priority 1)
-
-First create the organizational structure, then the workload accounts:
-
-##### **1A. Create Organizational Units (OUs)**
-
-1. **Access Organizations Console:**
-- Go to AWS Organizations console → **Organizational units**
-- You will see existing OUs: Root, Security, Sandbox
-
-2. **Create Non-Production OU:**
-- Click **"Create organizational unit"**
-- **Name:** `Non-Production`
-- **Description:** `Workload accounts for development, staging, and shared services`
-- **Parent:** Root
-
-3. **Create Production OU:**
-- Click **"Create organizational unit"**
-- **Name:** `Production`
-- **Description:** `Production workload accounts with enhanced security`
-- **Parent:** Root
-
-**Recommended OU Structure for Small Teams (<10 people):**
-```
-Root Organization
-├── Security OU (Control Tower managed)
-├── Sandbox OU (Control Tower managed)
-├── Non-Production OU (create new)
-└── Production OU (create new)
-```
-
-##### **1B. Create Workload Accounts**
-
-Use **Account Factory** in Control Tower console:
-
-1. **Access Account Factory:**
-- Go to Control Tower console → **Account Factory**
-- Click **"Enroll account"** or **"Create account"**
-
-2. **Create Development Account:**
-- **Account email:** `testawsrahardja+dev@gmail.com`
-- **Account name:** `Development`
-- **OU:** `Non-Production` (select from dropdown)
-- **Access configuration (SSO):**
-- **IAM Identity Center user email:** `testawsrahardja+dev@gmail.com`
-- **IAM Identity Center user name:** `Robert Rahardja` (your full name)
-
-3. **Create Staging Account:**
-- **Account email:** `testawsrahardja+staging@gmail.com`
-- **Account name:** `Staging`
-- **OU:** `Non-Production` (same OU as Development)
-- **Access configuration (SSO):**
-- **IAM Identity Center user email:** `testawsrahardja+staging@gmail.com`
-- **IAM Identity Center user name:** `Robert Rahardja`
-
-4. **Create Shared Services Account:**
-- **Account email:** `testawsrahardja+shared@gmail.com`
-- **Account name:** `Shared Services`
-- **OU:** `Non-Production` (same OU as Development/Staging)
-- **Access configuration (SSO):**
-- **IAM Identity Center user email:** `testawsrahardja+shared@gmail.com`
-- **IAM Identity Center user name:** `Robert Rahardja`
-
-5. **Create Production Account:**
-- **Account email:** `testawsrahardja+prod@gmail.com`
-- **Account name:** `Production`
-- **OU:** `Production` (separate OU for enhanced security)
-- **Access configuration (SSO):**
-- **IAM Identity Center user email:** `testawsrahardja+prod@gmail.com`
-- **IAM Identity Center user name:** `Robert Rahardja`
-
-**Timeline:** 10-15 minutes to create OUs + 15-30 minutes per account creation
-
-##### **Why This OU Structure Works for Small Teams:**
-
-**Benefits:**
-- **Simple governance** - Only 2 workload OUs to manage instead of 4
-- **Clear separation** - Production isolated for security and compliance
-- **Cost effective** - Shared policies across non-production environments
-- **Team friendly** - Easy to understand and navigate for <10 person teams
-- **Growth ready** - Can easily add more accounts to existing OUs
-
-**Access Patterns:**
-- **Non-Production OU:** Daily development work (Dev, Staging, Shared Services)
-- **Production OU:** Protected environment with stricter controls
-- **Developers:** Primarily work in Non-Production OU accounts
-- **DevOps/Leads:** Access to both OUs with appropriate permissions
-
-**Governance:**
-- **Non-Production OU:** More permissive guardrails for development/testing
-- **Production OU:** Strict security policies and compliance controls
-
-#### Step 1C: **Configure IAM Identity Center (SSO)** (Priority 1)
-
-After creating accounts, configure SSO for secure team access:
-
-##### **1. Access IAM Identity Center Console**
-1. **Navigate to Identity Center:**
-   - Go to AWS Console → **IAM Identity Center**
-   - Or search for "SSO" or "Identity Center"
-   - Ensure you are in the **management account**
-
-2. **Verify Identity Center is Enabled:**
-   - Should show "Identity Center is enabled in this organization"
-   - If not enabled, click **"Enable"** (Control Tower should have done this)
-
-##### **2. Configure Access Portal**
-1. **Set up Access Portal:**
-   - Go to **Settings** → **Identity Center configuration**
-   - **Identity source:** Choose "Identity Center directory" (default)
-   - **Access portal URL:** Note the URL (e.g., `https://d-xxxxxxxxxx.awsapps.com/start`)
-   - **Session duration:** Set to desired length (default 8 hours)
-
-##### **3. Create Permission Sets**
-Create role-based permission sets for different access levels:
-
-1. **Create Developer Permission Set:**
-   - Go to **Permission sets** → **Create permission set**
-   - **Name:** `DeveloperAccess`
-   - **Description:** `Developer access to non-production environments`
-   - **Permission policies:**
-     - `PowerUserAccess` (recommended for developers)
-     - Or create custom policy with specific permissions
-   - **Session duration:** 8 hours
-
-2. **Create Admin Permission Set:**
-   - **Name:** `AdminAccess`
-   - **Description:** `Administrative access to all environments`
-   - **Permission policies:** `AdministratorAccess`
-   - **Session duration:** 4 hours (shorter for security)
-
-3. **Create ReadOnly Permission Set:**
-   - **Name:** `ReadOnlyAccess`
-   - **Description:** `Read-only access for monitoring and auditing`
-   - **Permission policies:** `ReadOnlyAccess`
-   - **Session duration:** 12 hours
-
-##### **4. Assign Users to Accounts**
-Assign the SSO users created during account setup to appropriate accounts:
-
-1. **Go to AWS accounts:**
-   - Navigate to **AWS accounts** in Identity Center
-   - You should see all your workload accounts listed
-
-2. **Assign Users to Non-Production Accounts:**
-   - Select **Development account**
-   - Click **Assign users or groups**
-   - Select your SSO user (`Robert Rahardja`)
-   - **Permission set:** `DeveloperAccess` or `AdminAccess`
-   - Repeat for **Staging** and **Shared Services** accounts
-
-3. **Assign Users to Production Account:**
-   - Select **Production account**
-   - Click **Assign users or groups**
-   - Select your SSO user
-   - **Permission set:** `AdminAccess` (restrict as needed)
-
-##### **5. Add Team Members (When Team Grows)**
-To add additional team members:
-
-1. **Create New Users:**
-   - Go to **Users** → **Add user**
-   - **Username:** `teammate1` (no spaces)
-   - **Email:** `teammate1@company.com`
-   - **First name:** `Team`
-   - **Last name:** `Member`
-   - **Display name:** `Team Member`
-
-2. **Assign to Accounts:**
-   - Go to **AWS accounts**
-   - Select appropriate accounts
-   - Assign new user with appropriate permission sets
-
-##### **6. Access Your Accounts via SSO**
-
-1. **Get Your Access Portal URL:**
-   - Go to **Settings** → **Identity Center configuration**
-   - Copy the **Access portal URL**
-   - Bookmark this URL for easy access
-
-2. **Login Process:**
-   - Go to your access portal URL
-   - **Username:** Your SSO email (e.g., `testawsrahardja+dev@gmail.com`)
-   - **Password:** Set during first login
-   - **MFA:** Configure when prompted (highly recommended)
-
-3. **Access Accounts:**
-   - After login, you will see all assigned accounts
-   - Click on account → Select role → **Management console** or **Command line or programmatic access**
-
-##### **7. Command Line Access Setup**
-For CLI/CDK operations:
-
-1. **Install AWS CLI v2** (if not already installed)
-2. **Configure SSO profile:**
-   ```bash
-   aws configure sso
-   # SSO start URL: [your access portal URL]
-   # SSO region: [your region, e.g., ap-southeast-1]
-   # Account ID: [select from list]
-   # Role name: [select permission set]
-   # CLI default client Region: ap-southeast-1
-   # CLI default output format: json
-   # CLI profile name: dev-sso
-   ```
-
-3. **Use SSO profile:**
-   ```bash
-   # Login to SSO
-   aws sso login --profile dev-sso
-
-   # Use the profile
-   aws sts get-caller-identity --profile dev-sso
-
-   # Set as default
-   export AWS_PROFILE=dev-sso
-   ```
-
-##### **SSO Benefits for Small Teams:**
-- **Security:** No shared root account access
-- **Audit trail:** Clear logging of who did what
-- **Scalability:** Easy to add team members
-- **Convenience:** Single sign-on across all accounts
-- **Compliance:** Meets enterprise security standards
-
-#### Step 2: **Get Account IDs** (Priority 2)
-Once all accounts are created:
-
-```bash
-# Run the account ID retrieval script
-./scripts/get-account-ids.sh
-```
-
-**This script will:**
-- Query AWS Organizations for all account IDs
-- Create `.env` file with account mappings
-- Verify account access and permissions
-
-**Expected output:** `.env` file with all account IDs
-
-#### Step 3: **Bootstrap CDK in All Accounts** (Priority 2)
-Prepare all accounts for CDK deployments:
-
-```bash
-# Load the account IDs and bootstrap all accounts
-source .env
-./scripts/bootstrap-accounts.sh
-```
-
-**This process will:**
-- Install CDK toolkit in each workload account
-- Set up cross-account trust relationships
-- Create necessary S3 buckets and IAM roles
-- Prepare accounts for CDK deployments
-
-**Timeline:** 5-10 minutes per account
-
-#### Step 4: **Deploy Hello World Applications** (Priority 3)
-Deploy the sample applications to all environments:
-
-```bash
-# Deploy applications to all accounts
-./scripts/deploy-applications.sh
-```
-
-**This will:**
-- Deploy Hello World applications to all environments
-- Create API Gateway endpoints for each account
-- Set up environment-specific configurations
-- Generate output files with API URLs
-
-**Timeline:** 10-15 minutes total
-
-#### Step 5: **Validate Deployment** (Priority 3)
-Verify everything is working correctly:
-
-```bash
-# Validate all deployments
-./scripts/validate-deployment.sh
-```
-
-**This will:**
-- Test all API endpoints
-- Verify environment configurations
-- Confirm cross-account access
-- Check application functionality
-
-#### Step 6: **Set Up Cost Monitoring** (Optional but Recommended)
-Configure financial monitoring:
-
-1. **Go to AWS Billing & Cost Management**
-2. **Set up billing alerts:**
-   - Monthly spend alerts for each account
-   - Organization-wide spending alerts
-3. **Create budgets:**
-   - Per-account budgets based on expected usage
-   - Alert thresholds at 50%, 80%, 100%
-4. **Enable cost allocation tags:**
-   - Environment tags
-   - Project tags
-   - Owner tags
-
-### Alternative: Complete Automated Setup
-
-If you prefer to run everything at once after Control Tower setup:
-
-```bash
-# Complete setup script (after manual Control Tower setup)
-npm run setup:complete
-```
-
-**This runs all steps automatically:**
-1. Prerequisites check
-2. Project build and synthesis
-3. Account ID retrieval
-4. CDK bootstrapping
-5. Application deployment
-6. Validation testing
-
-### Verification Checklist
-
-After completing all steps, verify:
+---
+
+## ✅ Phase 8: Execution Commands
+
+### 8.1 Make Scripts Executable
+
+- [ ] **Make all scripts executable**
+  ```bash
+  chmod +x scripts/*.sh
+  ```
+
+### 8.2 Update Email Configuration
+
+- [ ] **Get account IDs and automatically update configuration**
+  ```bash
+  ./scripts/get-account-ids.sh
+  ./scripts/sync-account-emails.sh
+  ```
+  
+> **Note**: The sync script now automatically updates `lib/config/accounts.ts` with the correct emails from your AWS organization. It creates a backup file first for safety.
+
+### 8.3 CDK Bootstrap and Deploy
+
+- [ ] **Bootstrap CDK in management account**
+  ```bash
+  cdk bootstrap
+  ```
+
+- [ ] **Bootstrap all workload accounts**
+  ```bash
+  source .env
+  ./scripts/bootstrap-accounts.sh
+  ```
+
+- [ ] **Build and synthesize CDK**
+  ```bash
+  npm run build
+  cdk synth
+  ```
+
+- [ ] **Deploy applications to all environments**
+  ```bash
+  ./scripts/deploy-applications.sh
+  ```
+
+- [ ] **Validate deployment**
+  ```bash
+  ./scripts/validate-deployment.sh
+  ```
+
+### 8.4 Alternative: Complete Automated Setup
+
+- [ ] **Run complete setup script** (after Control Tower manual setup)
+  ```bash
+  npm run setup:complete
+  ```
+  
+> **Note**: This automated approach now includes automatic email synchronization, so no manual configuration updates are needed.
+
+### 8.5 Individual Environment Commands
+
+- [ ] **Deploy to specific environments** (optional)
+  ```bash
+  npm run deploy:dev
+  npm run deploy:staging
+  npm run deploy:shared
+  npm run deploy:prod
+  ```
+
+- [ ] **Test all endpoints**
+  ```bash
+  npm run test:endpoints
+  ```
+
+### 8.6 Verification Checklist
 
 - [ ] **Control Tower status:** All OUs showing "Compliant"
 - [ ] **Account access:** Can switch roles to all workload accounts
 - [ ] **Applications deployed:** All environments have working API endpoints
 - [ ] **Monitoring setup:** Cost alerts and budgets configured
-- [ ] **Documentation:** All account IDs and URLs documented
+- [ ] **CLI access:** SSO profile working for command line operations
 
-### Expected Timeline Summary
+---
 
-| Step | Time Required | Prerequisites |
-|------|---------------|---------------|
-| Create workload accounts | 60-120 minutes | Control Tower setup complete |
-| Get account IDs | 2-5 minutes | All accounts created |
-| Bootstrap CDK | 20-40 minutes | Account IDs available |
-| Deploy applications | 10-15 minutes | CDK bootstrap complete |
-| Validate deployment | 5-10 minutes | Applications deployed |
-| **Total** | **~2-3 hours** | Control Tower operational |
+## 📋 Quick Reference Commands
 
-### Ready for Development
+### Security Verification
 
-Once these steps are complete, you will have:
-- ✅ **Multi-account AWS environment** with proper governance
-- ✅ **Working Hello World applications** in all environments
-- ✅ **Cost monitoring and alerts** configured
-- ✅ **CDK deployment pipeline** ready for your applications
-- ✅ **Security baseline** enforced across all accounts
+```bash
+# Verify you're using IAM user (not root)
+aws sts get-caller-identity
+# Should show: "arn:aws:iam::account:user/control-tower-admin"
+# NOT: "arn:aws:iam::account:root"
+```
 
-You can now begin developing and deploying your actual applications using the established multi-account structure!
+### Project Setup
 
-## 📞 Support Resources
+```bash
+mkdir simple-control-tower-cdk
+cd simple-control-tower-cdk
+cdk init app --language typescript
+npm install aws-cdk-lib@latest constructs@latest
+```
 
-- **AWS Control Tower Documentation:** <https://docs.aws.amazon.com/controltower/>
-- **AWS Support:** If setup fails or takes >2 hours
-- **AWS Forums:** Community support for common issues
-- **Cost Calculator:** <https://calculator.aws/> for cost estimation
+### Deployment Commands
 
-# 6. bootstrap cdk (use iam user cli credentials)
-
-cdk bootstrap
-
-# 🇸🇬 singapore: cdk bootstrap --region ap-southeast-1
-
-# 7. get account ids and deploy
-
+```bash
+# Get account IDs and auto-sync emails (no manual editing needed!)
 ./scripts/get-account-ids.sh
+./scripts/sync-account-emails.sh  # Automatically updates accounts.ts
+
+# Bootstrap and deploy
+source .env
+cdk bootstrap
 ./scripts/bootstrap-accounts.sh
 ./scripts/deploy-applications.sh
 
-# 8. validate deployment
-
+# Validate
 ./scripts/validate-deployment.sh
-
-# 9. test individual environments
-
-npm run deploy:dev
-npm run deploy:staging
-npm run deploy:prod
-npm run test:endpoints
-
-````
+```
 
 ### individual environment commands
 
