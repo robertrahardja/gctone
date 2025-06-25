@@ -1772,24 +1772,76 @@ npm install aws-cdk-lib@latest constructs@latest
 
 ## 🚀 Greenfield Setup Commands
 
-### **🎯 Best Practice: Single Command Approach (Recommended)**
+### **🎯 Current Best Practice: Step-by-Step Approach**
 
-**After Control Tower setup completes, run ONE command:**
+**After Control Tower setup completes, follow these steps:**
+
+#### **Step 1: Fix CDK Version Compatibility (If Needed)**
 ```bash
-# 🚀 COMPLETE AUTOMATED SETUP (Best Practice)
-ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/setup-everything.sh
+# Update CDK CLI to latest version
+npm install -g aws-cdk@latest
+
+# Verify versions are compatible
+cdk --version
+npm list aws-cdk-lib
 ```
 
-**What this single command does:**
-- ✅ Sets up complete cost protection (alerts + budgets)
-- ✅ Discovers all account IDs automatically  
-- ✅ Syncs email configuration
-- ✅ Bootstraps CDK in all accounts
-- ✅ Deploys applications to all environments
-- ✅ Validates entire setup
-- ✅ Provides detailed status report
+#### **Step 2: Complete Cost Protection Setup**
+```bash
+# Set up all billing alerts and budgets (CRITICAL - do this first)
+ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/fix-missing-controltower-config.sh
+ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/create-per-account-alerts.sh
+AWS_PROFILE=your-profile ./scripts/create-budgets.sh
+```
 
-**Time: ~15 minutes of automated work**
+#### **Step 3: Deploy Applications**
+```bash
+# Get account IDs and deploy applications
+AWS_PROFILE=your-profile ./scripts/get-account-ids.sh
+source .env
+npm run build
+AWS_PROFILE=your-profile cdk bootstrap
+AWS_PROFILE=your-profile ./scripts/bootstrap-accounts.sh
+AWS_PROFILE=your-profile ./scripts/deploy-applications.sh
+```
+
+#### **Step 4: Validate Everything**
+```bash
+# Verify deployment is complete
+AWS_PROFILE=your-profile ./scripts/validate-deployments.sh
+```
+
+**Total Time: ~30-45 minutes (including AWS provisioning time)**
+
+#### **🔧 Common Issues & Solutions**
+
+**CDK Version Mismatch Error:**
+```bash
+# Error: "CLI versions and CDK library versions have diverged"
+npm install -g aws-cdk@latest
+```
+
+**Applications Not Deployed:**
+```bash
+# Check if stacks exist
+AWS_PROFILE=your-profile cdk list
+
+# If no stacks, run the full deployment:
+npm run build
+source .env
+AWS_PROFILE=your-profile ./scripts/bootstrap-accounts.sh
+AWS_PROFILE=your-profile ./scripts/deploy-applications.sh
+```
+
+**Permission Errors:**
+```bash
+# Make sure you're using SSO profile, not root
+aws sts get-caller-identity
+# Should show IAM user, not root
+
+# Refresh SSO login if expired
+aws sso login --profile your-profile
+```
 
 ---
 
