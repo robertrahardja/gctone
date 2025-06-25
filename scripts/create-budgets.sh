@@ -116,23 +116,23 @@ fi
 
 # Create organization-wide budget
 echo "Creating Organization-wide budget..."
-create_budget "Organization-Monthly-Budget" "500" "$MANAGEMENT_ACCOUNT_ID,$dev_account_id,$staging_account_id,$shared_account_id,$prod_account_id" "$BUDGET_EMAIL"
+create_budget "Organization-Monthly-Budget" "40" "$MANAGEMENT_ACCOUNT_ID,$dev_account_id,$staging_account_id,$shared_account_id,$prod_account_id" "$BUDGET_EMAIL"
 
 # Create per-account budgets if account IDs are available
 if [ ! -z "$dev_account_id" ]; then
-    create_budget "Development-Monthly-Budget" "50" "$dev_account_id" "$BUDGET_EMAIL"
+    create_budget "Development-Monthly-Budget" "8" "$dev_account_id" "$BUDGET_EMAIL"
 fi
 
 if [ ! -z "$staging_account_id" ]; then
-    create_budget "Staging-Monthly-Budget" "100" "$staging_account_id" "$BUDGET_EMAIL"
+    create_budget "Staging-Monthly-Budget" "8" "$staging_account_id" "$BUDGET_EMAIL"
 fi
 
 if [ ! -z "$shared_account_id" ]; then
-    create_budget "Shared-Services-Monthly-Budget" "75" "$shared_account_id" "$BUDGET_EMAIL"
+    create_budget "Shared-Services-Monthly-Budget" "8" "$shared_account_id" "$BUDGET_EMAIL"
 fi
 
 if [ ! -z "$prod_account_id" ]; then
-    create_budget "Production-Monthly-Budget" "250" "$prod_account_id" "$BUDGET_EMAIL"
+    create_budget "Production-Monthly-Budget" "8" "$prod_account_id" "$BUDGET_EMAIL"
 fi
 
 echo ""
