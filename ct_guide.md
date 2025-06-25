@@ -442,7 +442,7 @@ aws --profile control-tower-admin sts get-caller-identity
 
 - [ ] **Install development dependencies**
   ```bash
-  npm install --save-dev @types/node@latest
+  npm install --save-dev @types/node@latest @types/aws-lambda@latest
   ```
 
 - [ ] **Verify versions**
@@ -454,7 +454,7 @@ aws --profile control-tower-admin sts get-caller-identity
 
 - [ ] **Create directory structure**
   ```bash
-  mkdir -p lib/{stacks,constructs,config}
+  mkdir -p lib/{stacks,constructs,config,lambda}
   mkdir -p scripts
   ```
 
@@ -463,6 +463,8 @@ aws --profile control-tower-admin sts get-caller-identity
   touch lib/config/accounts.ts
   touch lib/constructs/hello-world-app.ts
   touch lib/stacks/application-stack.ts
+  touch lib/lambda/main-handler.ts
+  touch lib/lambda/health-handler.ts
   touch scripts/get-account-ids.sh
   touch scripts/bootstrap-accounts.sh
   touch scripts/deploy-applications.sh
@@ -950,7 +952,118 @@ If you prefer manual setup or the scripts don't work in your environment:
 
 ## ✅ Phase 6: CDK Application Code
 
-### 6.1 Hello World Application
+### 6.1 TypeScript Lambda Functions
+
+- [ ] **Create `lib/lambda/main-handler.ts`** with the following content:
+
+```typescript
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+
+interface ResponseMetadata {
+  remainingTime: number;
+  memoryLimit: string;
+  architecture: string;
+  nodeVersion: string;
+}
+
+interface ResponseBody {
+  message: string;
+  environment: string;
+  account: string;
+  timestamp: string;
+  requestId: string;
+  region: string;
+  version: string;
+  runtime: string;
+  metadata: ResponseMetadata;
+}
+
+export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  // Log incoming request for debugging and monitoring
+  console.log('event received:', JSON.stringify(event, null, 2));
+  
+  const responseBody: ResponseBody = {
+    message: process.env.HELLO_WORLD_MESSAGE || 'Hello World!',
+    environment: process.env.ENVIRONMENT || 'unknown',
+    account: process.env.ACCOUNT_NAME || 'unknown',
+    timestamp: new Date().toISOString(),
+    requestId: context.awsRequestId,
+    region: process.env.AWS_REGION || 'unknown',
+    version: '1.0.0',
+    runtime: 'nodejs22.x',
+    // 🇸🇬 Singapore addition: add location metadata
+    // location: {
+    //   country: 'singapore',
+    //   region: 'ap-southeast-1', 
+    //   timezone: 'asia/singapore',
+    //   localtime: new Date().toLocaleString('en-sg', {
+    //     timeZone: 'asia/singapore'
+    //   })
+    // },
+    metadata: {
+      remainingTime: context.getRemainingTimeInMillis(),
+      memoryLimit: context.memoryLimitInMB,
+      architecture: process.arch,
+      nodeVersion: process.version
+    }
+  };
+  
+  const response: APIGatewayProxyResult = {
+    statusCode: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+    body: JSON.stringify(responseBody, null, 2)
+  };
+  
+  return response;
+};
+```
+
+- [ ] **Create `lib/lambda/health-handler.ts`** with the following content:
+
+```typescript
+import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+
+interface HealthResponseBody {
+  status: string;
+  environment: string;
+  timestamp: string;
+  uptime: number;
+}
+
+export const handler = async (
+  event: APIGatewayProxyEvent,
+  context: Context
+): Promise<APIGatewayProxyResult> => {
+  
+  const responseBody: HealthResponseBody = {
+    status: 'healthy',
+    environment: process.env.ENVIRONMENT || 'unknown',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  };
+
+  const response: APIGatewayProxyResult = {
+    statusCode: 200,
+    headers: { 
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*'
+    },
+    body: JSON.stringify(responseBody)
+  };
+
+  return response;
+};
+```
+
+### 6.2 Hello World Application Construct
 
 - [ ] **Create `lib/constructs/hello-world-app.ts`** with the following content:
 
@@ -958,6 +1071,7 @@ If you prefer manual setup or the scripts don't work in your environment:
 import { Construct } from "constructs";
 import {
   aws_lambda as lambda,
+  aws_lambda_nodejs as nodejs,
   aws_apigatewayv2 as apigatewayv2,
   aws_apigatewayv2_integrations as integrations,
   aws_logs as logs,
@@ -973,7 +1087,7 @@ export interface helloworldappprops {
 
 export class helloworldapp extends Construct {
   public readonly api: apigatewayv2.HttpApi;
-  public readonly lambda: lambda.Function;
+  public readonly lambda: lambda.IFunction;
 
   constructor(scope: Construct, id: string, props: helloworldappprops) {
     super(scope, id);
@@ -990,74 +1104,39 @@ export class helloworldapp extends Construct {
       removalPolicy: RemovalPolicy.DESTROY, // cost optimization
     });
 
-    // create lambda function with node.js 22
-    this.lambda = new lambda.Function(this, "helloworldfunction", {
+    // create TypeScript lambda function with automatic compilation
+    this.lambda = new nodejs.NodejsFunction(this, "helloworldfunction", {
       runtime: lambda.Runtime.NODEJS_22_X,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-exports.handler = async (event, context) => {
-console.log('event received:', json.stringify(event, null, 2));
-
-const response = {
-statuscode: 200,
-headers: {
-'content-type': 'application/json',
-'access-control-allow-origin': '*',
-'access-control-allow-methods': 'get, post, options',
-'access-control-allow-headers': 'content-type, authorization',
-},
-body: json.stringify({
-message: '${accountconfig.helloworldmessage}',
-environment: '${accountconfig.environment}',
-account: '${accountconfig.name}',
-timestamp: new date().toisostring(),
-requestid: context.awsrequestid,
-region: process.env.aws_region,
-version: '1.0.0',
-runtime: 'nodejs22.x',
-// 🇸🇬 singapore addition: add location metadata
-// location: {
-//   country: 'singapore',
-//   region: 'ap-southeast-1', 
-//   timezone: 'asia/singapore',
-//   localtime: new date().tolocalestring('en-sg', {
-//     timezone: 'asia/singapore'
-//   })
-// },
-metadata: {
-remainingtime: context.getremainingtimeinmillis(),
-memorylimit: context.memorylimitinmb,
-architecture: process.arch,
-nodeversion: process.version
-}
-}, null, 2)
-};
-
-return response;
-};
-`),
+      entry: "lib/lambda/main-handler.ts",   // TypeScript source file
+      handler: "handler",                    // Export name from TypeScript file
       environment: {
-        environment: accountconfig.environment,
-        account_name: accountconfig.name,
+        ENVIRONMENT: accountconfig.environment,
+        ACCOUNT_NAME: accountconfig.name,
+        HELLO_WORLD_MESSAGE: accountconfig.helloworldmessage,
       },
-      description: `hello world lambda for ${accountconfig.name} environment`,
+      description: `Hello World Lambda for ${accountconfig.name} environment`,
       timeout: Duration.seconds(accountconfig.timeout),
       memorySize: accountconfig.memorysize,
       logGroup: loggroup,
       architecture: lambda.Architecture.ARM_64, // cost optimization with graviton
+      bundling: {
+        minify: true,                          // Minify TypeScript output
+        sourceMap: false,                      // Disable source maps for production
+        target: "es2022",                      // Target modern JavaScript
+      },
     });
 
     // create http api (cost-optimized vs rest api)
     this.api = new apigatewayv2.HttpApi(this, "helloworldapi", {
-      apiName: `hello world api - ${accountconfig.environment}`,
-      description: `hello world http api for ${accountconfig.name} environment`,
+      apiName: `Hello World API - ${accountconfig.environment}`,
+      description: `Hello World HTTP API for ${accountconfig.name} environment`,
       corsPreflight: {
         allowOrigins: ["*"],
         allowMethods: [
           apigatewayv2.CorsHttpMethod.GET,
           apigatewayv2.CorsHttpMethod.POST,
         ],
-        allowHeaders: ["content-type", "authorization"],
+        allowHeaders: ["Content-Type", "Authorization"],
         maxAge: Duration.days(1),
       },
     });
@@ -1072,27 +1151,22 @@ return response;
       ),
     });
 
-    // simple health check endpoint
-    const healthlambda = new lambda.Function(this, "healthfunction", {
+    // simple health check endpoint with TypeScript
+    const healthlambda = new nodejs.NodejsFunction(this, "healthfunction", {
       runtime: lambda.Runtime.NODEJS_22_X,
-      handler: "index.handler",
-      code: lambda.Code.fromInline(`
-exports.handler = async (event, context) => {
-return {
-statuscode: 200,
-headers: { 'content-type': 'application/json' },
-body: json.stringify({
-status: 'healthy',
-environment: '${accountconfig.environment}',
-timestamp: new date().toisostring(),
-uptime: process.uptime()
-})
-};
-};
-`),
+      entry: "lib/lambda/health-handler.ts",  // TypeScript source file
+      handler: "handler",                     // Export name from TypeScript file
+      environment: {
+        ENVIRONMENT: accountconfig.environment,
+      },
       timeout: Duration.seconds(10),
       memorySize: 128, // minimal for health check
       architecture: lambda.Architecture.ARM_64,
+      bundling: {
+        minify: true,                          // Minify TypeScript output
+        sourceMap: false,                      // Disable source maps for production
+        target: "es2022",                      // Target modern JavaScript
+      },
     });
 
     this.api.addRoutes({
@@ -1107,19 +1181,19 @@ uptime: process.uptime()
     // outputs
     new CfnOutput(this, "apiurl", {
       value: this.api.apiEndpoint,
-      description: `hello world api url for ${accountconfig.environment}`,
+      description: `Hello World API URL for ${accountconfig.environment}`,
       exportName: `helloworldapiurl-${accountconfig.environment}`,
     });
 
     new CfnOutput(this, "healthcheckurl", {
       value: `${this.api.apiEndpoint}/health`,
-      description: `health check url for ${accountconfig.environment}`,
+      description: `Health check URL for ${accountconfig.environment}`,
     });
   }
 }
 ```
 
-### 6.2 Create Application Stack
+### 6.3 Create Application Stack
 
 - [ ] **Create `lib/stacks/application-stack.ts`** with the following content:
 
@@ -1154,7 +1228,7 @@ export class applicationstack extends Stack {
 
 ---
 
-### 6.3 Update Main CDK App
+### 6.4 Update Main CDK App
 
 - [ ] **Update `bin/simple-control-tower-cdk.ts`** with the following content:
 
@@ -1194,6 +1268,41 @@ cdk.Tags.of(app).add("project", "simplecontroltower");
 ```
 
 ---
+
+## 🚀 TypeScript Lambda Benefits
+
+This template now uses **TypeScript Lambda functions** with the following advantages:
+
+### ✅ **Type Safety & Development Experience**
+- **Compile-time error checking** prevents runtime errors
+- **IntelliSense support** with autocomplete and documentation
+- **Refactoring safety** with IDE support for renaming and finding references
+- **Interface definitions** for request/response structures
+
+### ✅ **Automatic Build & Optimization**
+- **NodejsFunction** automatically compiles TypeScript to JavaScript
+- **esbuild integration** for fast compilation and minification
+- **Tree shaking** removes unused code for smaller bundles
+- **Modern JavaScript targets** (ES2022) for better performance
+
+### ✅ **External File Organization**
+- **Separate .ts files** instead of inline code for better maintainability
+- **Proper IDE support** with syntax highlighting and debugging
+- **Version control friendly** with clean file structure
+- **Easier testing** with external TypeScript files
+
+### ✅ **Bundle Optimization**
+- **Minified output** for reduced Lambda cold start times
+- **No source maps** in production for smaller bundles
+- **ARM64 optimization** combined with TypeScript compilation
+- **Modern JavaScript** targeting for better performance
+
+### 🔄 **Migration from JavaScript**
+If you previously used inline JavaScript:
+- Replace `lambda.Code.fromInline()` with TypeScript files
+- Change `lambda.Function` to `nodejs.NodejsFunction`
+- Add proper TypeScript types for better development experience
+- Enjoy automatic compilation and optimization
 
 ---
 

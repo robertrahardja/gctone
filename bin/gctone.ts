@@ -94,7 +94,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
    */
   new applicationstack(app, `helloworld-${key}`, {
     accountconfig: accountconfig,  // Pass environment configuration to stack
-    
+
     /**
      * AWS Environment Configuration
      * 
@@ -116,7 +116,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
       account:
         process.env[`${key.toUpperCase()}_ACCOUNT_ID`] ||
         process.env.CDK_DEFAULT_ACCOUNT,
-      
+
       /**
        * Region Configuration
        * 
@@ -126,7 +126,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
       region: process.env.CDK_DEFAULT_REGION || "us-east-1",
       // 🇸🇬 Singapore deployment: change default to "ap-southeast-1"
     },
-    
+
     /**
      * Stack Metadata
      * 
@@ -135,7 +135,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
      */
     description: `Hello World application for ${accountconfig.name} environment`,
     // 🇸🇬 Singapore customization: add "(Singapore)" to description
-    
+
     /**
      * Stack Name Override
      * 
@@ -198,6 +198,6 @@ cdk.Tags.of(app).add("project", "simplecontroltower");
  * - Geographic resource organization
  */
 // 🇸🇬 Singapore deployment additions:
-// cdk.Tags.of(app).add("region", "ap-southeast-1");     // AWS region identification
-// cdk.Tags.of(app).add("country", "singapore");         // Country-specific compliance
-// cdk.Tags.of(app).add("currency", "sgd");              // Currency for cost tracking
+cdk.Tags.of(app).add("region", "ap-southeast-1");     // AWS region identification
+cdk.Tags.of(app).add("country", "singapore");         // Country-specific compliance
+cdk.Tags.of(app).add("currency", "sgd");              // Currency for cost tracking

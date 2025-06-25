@@ -24,6 +24,7 @@
     "setup:complete": "./scripts/complete-setup.sh"
   },
   "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
     "@types/jest": "^29.5.14",
     "@types/node": "^24.0.3",
     "aws-cdk": "2.1019.1",

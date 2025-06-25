@@ -36,6 +36,7 @@
 import { Construct } from "constructs";
 import {
   aws_lambda as lambda,
+  aws_lambda_nodejs as nodejs,
   aws_apigatewayv2 as apigatewayv2,
   aws_apigatewayv2_integrations as integrations,
   aws_logs as logs,
@@ -101,7 +102,7 @@ export class helloworldapp extends Construct {
    * Exposed as public readonly to allow additional configuration
    * (e.g., event sources, permissions, environment variables).
    */
-  public readonly lambda: lambda.Function;
+  public readonly lambda: lambda.IFunction;
 
   /**
    * HelloWorldApp Constructor
@@ -167,11 +168,10 @@ export class helloworldapp extends Construct {
      * - Structured error handling and response formatting
      * - No sensitive information exposure in responses
      */
-    this.lambda = new lambda.Function(this, "helloworldfunction", {
+    this.lambda = new nodejs.NodejsFunction(this, "helloworldfunction", {
       runtime: lambda.Runtime.NODEJS_22_X,  // Latest LTS Node.js for security and performance
-      handler: "main-handler.handler",       // External file handler entry point
-      // External Lambda function code from file
-      code: lambda.Code.fromAsset("lib/lambda"),
+      entry: "lib/lambda/main-handler.ts",   // TypeScript source file
+      handler: "handler",                    // Export name from TypeScript file
       // Lambda environment variables for runtime configuration
       environment: {
         ENVIRONMENT: accountconfig.environment,     // Environment type for internal logic
@@ -183,6 +183,11 @@ export class helloworldapp extends Construct {
       memorySize: accountconfig.memorysize,                  // Environment-specific memory allocation
       logGroup: loggroup,                                    // Link to pre-created log group
       architecture: lambda.Architecture.ARM_64,             // ARM64 for 20% cost savings (Graviton)
+      bundling: {
+        minify: true,                                        // Minify TypeScript output for smaller bundle
+        sourceMap: false,                                    // Disable source maps for production
+        target: "es2022",                                    // Target modern JavaScript for better performance
+      },
     });
 
     /**
@@ -259,16 +264,21 @@ export class helloworldapp extends Construct {
      * - Automated alerting and recovery
      * - Service discovery health status
      */
-    const healthlambda = new lambda.Function(this, "healthfunction", {
+    const healthlambda = new nodejs.NodejsFunction(this, "healthfunction", {
       runtime: lambda.Runtime.NODEJS_22_X,          // Consistent runtime with main function
-      handler: "health-handler.handler",            // External file handler entry point
-      code: lambda.Code.fromAsset("lib/lambda"),    // External Lambda function code from file
+      entry: "lib/lambda/health-handler.ts",        // TypeScript source file
+      handler: "handler",                           // Export name from TypeScript file
       environment: {
         ENVIRONMENT: accountconfig.environment,     // Environment identification
       },
       timeout: Duration.seconds(10),                 // Short timeout for quick health checks
       memorySize: 128,                               // Minimal memory allocation for cost efficiency
       architecture: lambda.Architecture.ARM_64,     // ARM64 for cost optimization
+      bundling: {
+        minify: true,                                // Minify TypeScript output for smaller bundle
+        sourceMap: false,                            // Disable source maps for production
+        target: "es2022",                            // Target modern JavaScript for better performance
+      },
     });
 
     /**
