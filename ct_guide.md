@@ -21,10 +21,13 @@ A step-by-step checklist for setting up AWS Control Tower with CDK v2 from scrat
 
 ### ❌ Must Be Done Manually
 - **Initial Control Tower Setup** - Requires root account and legal acceptance
-- **Guardrails Selection** - Part of Control Tower wizard (one-time decision)
-- **CloudTrail & Config** - Integrated into Control Tower setup
+- **Guardrails Selection** - Integrated into landing zone wizard (cannot be automated)
+- **Organization CloudTrail** - Part of foundational Control Tower setup
+- **Organization AWS Config** - Integrated into Control Tower baseline
 - **Root Account MFA** - Security requirement (human verification needed)
 - **Email Verification** - AWS sends verification emails for new accounts
+
+> **⚠️ Important**: The Control Tower setup wizard is a **one-time foundational process** that establishes the security and compliance baseline. These settings cannot be automated because they require organizational decisions and create the underlying infrastructure that everything else depends on.
 
 ### 🔄 Hybrid Approach
 - **Phase 1-5.7**: Manual Control Tower setup (30-60 minutes)
@@ -32,6 +35,106 @@ A step-by-step checklist for setting up AWS Control Tower with CDK v2 from scrat
 - **Email sync**: Fully automated - no more manual copy-paste!
 
 > **💡 Recommendation**: Use automated scripts for everything after Control Tower setup. This reduces manual work from ~3 hours to ~1 hour, with email configuration now completely automated.
+
+---
+
+## 💰 Cost Analysis
+
+### Monthly Cost Estimates
+
+#### **Core Control Tower Infrastructure** (Required)
+- **AWS Organizations**: Free
+- **Control Tower Service**: Free 
+- **CloudTrail Organization Trail**: ~$2-5/month (depends on API calls)
+- **AWS Config**: ~$10-20/month (all accounts, basic rules)
+- **S3 Storage (Logs)**: ~$5-15/month (CloudTrail + Config data)
+- **CloudWatch Logs**: ~$5-10/month (retention costs)
+
+**Infrastructure Subtotal: $22-50/month**
+
+#### **Hello World Applications** (Per Environment)
+- **Lambda Functions**: ~$0.20/month per environment (minimal usage)
+- **API Gateway HTTP API**: ~$1/month per environment (1000 requests/month)
+- **CloudWatch Log Groups**: ~$0.50/month per environment
+
+**Per Environment: ~$1.70/month**  
+**All 4 Environments: ~$7/month**
+
+#### **Cost Management Services** (Optional but Recommended)
+- **AWS Budgets**: $0.20/month per budget (5 budgets = $1/month)
+- **CloudWatch Billing Alarms**: ~$0.30/month (3 alarms)
+- **SNS Notifications**: <$0.10/month (email only)
+
+**Management Subtotal: ~$1.50/month**
+
+### **Total Monthly Cost**
+
+| Region | Monthly Cost | Annual Cost |
+|--------|--------------|-------------|
+| **US East 1 (Virginia)** | $30-60 | $360-720 |
+| **🇸🇬 Singapore (ap-southeast-1)** | $35-70 (+15%) | $420-840 |
+
+### **Cost Breakdown by Account**
+
+| Account | Services | Monthly Cost |
+|---------|----------|--------------|
+| **Management** | Organizations, Control Tower, Billing | $15-25 |
+| **Log Archive** | S3 storage, data transfer | $10-20 |
+| **Audit** | Config aggregation, minimal compute | $5-10 |
+| **Development** | Lambda (128MB), API Gateway, logs | $2-5 |
+| **Staging** | Lambda (256MB), API Gateway, logs | $3-6 |
+| **Shared Services** | Lambda (256MB), API Gateway, logs | $3-6 |
+| **Production** | Lambda (512MB), API Gateway, logs | $4-8 |
+
+### **First Month with AWS Free Tier**
+
+| Service | Free Tier Benefit | Savings |
+|---------|-------------------|---------|
+| **Lambda** | 1M requests/month free | ~$5-10 |
+| **API Gateway** | 1M requests/month free | ~$3-5 |
+| **CloudWatch** | 10 GB logs free | ~$3-5 |
+| **S3** | 5 GB storage free | ~$1-2 |
+
+**First Month Cost (with free tier): $20-40**  
+**Steady State (after 12 months): $30-70**
+
+### **Built-in Cost Optimization Features**
+
+- ✅ **HTTP API vs REST API**: 70% cheaper
+- ✅ **ARM64 Lambda**: 20% cheaper than x86
+- ✅ **Environment-specific sizing**: Dev uses minimal resources
+- ✅ **Short log retention**: 1 week dev, 1 month prod
+- ✅ **Automated budget alerts**: 50%, 80%, 100% thresholds
+
+### **Recommended Budget Allocation**
+
+```
+Management Account:    $25/month
+Audit Account:         $15/month  
+Log Archive:           $20/month
+Development:           $10/month
+Staging:               $15/month
+Shared Services:       $15/month
+Production:            $25/month
+Total Budget:          $125/month (with buffer)
+```
+
+### **ROI Justification**
+
+**What You Get for $35-70/month:**
+- ✅ Enterprise-grade governance (normally $1000s/month consultant fees)
+- ✅ Multi-account security baseline
+- ✅ Automated compliance monitoring
+- ✅ Cost management and alerts
+- ✅ CI/CD ready infrastructure
+- ✅ Production-ready foundation
+
+**Compared to Alternatives:**
+- Manual AWS setup: 40+ hours @ $100/hr = $4000
+- Terraform Enterprise: $20-50/user/month
+- AWS Control Tower: Built-in governance at infrastructure cost only
+
+> **💡 Bottom Line**: Complete production-ready AWS foundation for the cost of a few coffee subscriptions per month!
 
 ---
 
@@ -419,6 +522,8 @@ export const core_accounts = {
     - OU: Security OU
 
 ### 5.4 Compliance and Governance
+
+> **⚠️ Note**: These configurations are part of the Control Tower setup wizard and **cannot be automated**. They establish the foundational security baseline for your organization.
 
 #### 5.4.1 Guardrails Selection
 
