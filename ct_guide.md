@@ -370,6 +370,12 @@ export const core_accounts = {
 };
 ```
 
+> **💡 Pro Tip**: You can automatically sync emails from your AWS organization using the provided script:
+> ```bash
+> ./scripts/sync-account-emails.sh
+> ```
+> This script fetches the actual emails from your AWS accounts and shows you what to update in the config.
+
 ---
 
 ## phase 5: hello world application

@@ -74,7 +74,7 @@ export const accounts: Record<string, accountconfig> = {
    */
   dev: {
     name: "development",
-    email: "testawsrahardja+dev@gmail.com", // replace with your email
+    email: "testawsrahardja+dev@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "dev",
     helloworldmessage: "hello from development! 💻",
     // 🇸🇬 singapore version: "hello from singapore development! 🇸🇬💻",
@@ -96,7 +96,7 @@ export const accounts: Record<string, accountconfig> = {
    */
   staging: {
     name: "staging",
-    email: "testawsrahardja+staging@gmail.com", // replace with your email
+    email: "testawsrahardja+staging@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "staging",
     helloworldmessage: "hello from staging! 🧪",
     // 🇸🇬 singapore version: "hello from singapore staging! 🇸🇬🧪",
@@ -118,7 +118,7 @@ export const accounts: Record<string, accountconfig> = {
    */
   shared: {
     name: "shared-services",
-    email: "testawsrahardja+shared@gmail.com", // replace with your email
+    email: "testawsrahardja+shared@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "shared",
     helloworldmessage: "hello from shared services! 🔧",
     // 🇸🇬 singapore version: "hello from singapore shared services! 🇸🇬🔧",
@@ -140,7 +140,7 @@ export const accounts: Record<string, accountconfig> = {
    */
   prod: {
     name: "production",
-    email: "testawsrahardja+prod@gmail.com", // replace with your email
+    email: "testawsrahardja+prod@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "prod",
     helloworldmessage: "hello from production! 🚀",
     // 🇸🇬 singapore version: "hello from singapore production! 🇸🇬🚀",
@@ -184,7 +184,7 @@ export const core_accounts = {
    * - Cross-account IAM role management
    * - Service Control Policy (SCP) management
    */
-  management: "testawsrahardja@gmail.com", // replace with your email
+  management: "testawsrahardja@gmail.com", // update with ./scripts/sync-account-emails.sh
   
   /**
    * Audit Account
@@ -199,7 +199,7 @@ export const core_accounts = {
    * - Cross-account security assessment
    * - Detective controls and investigation
    */
-  audit: "testawsrahardjaaudit@gmail.com", // replace with your email
+  audit: "testawsrahardjaaudit@gmail.com", // update with ./scripts/sync-account-emails.sh
   
   /**
    * Log Archive Account
@@ -214,5 +214,5 @@ export const core_accounts = {
    * - AWS Config compliance data storage
    * - Security log analysis and forensics
    */
-  logarchive: "testawsrahardjalogs@gmail.com", // replace with your email
+  logarchive: "testawsrahardjalogs@gmail.com", // update with ./scripts/sync-account-emails.sh
 };
