@@ -875,4 +875,95 @@ graph LR
 - **📊 Progress Tracking**: Real-time status updates and validation
 - **🚀 Confidence**: Comprehensive testing ensures everything works
 
-This comprehensive flow documentation helps understand how the application works from initial setup through AWS Control Tower to production deployment, including the new consolidated automation approach, TypeScript stack construction, detailed function call flows, modern development benefits, and multi-environment deployment patterns.
+## Cost Management and Lifecycle Flow
+
+```mermaid
+graph TB
+    ActiveDev["💻 Active Development"] --> Pause{"🤔 Pause Development?"}
+    
+    Pause -->|Continue| KeepRunning["🔄 Keep Applications Running<br/>~$35-70/month"]
+    Pause -->|Pause| DestroyApps["🗑️ Destroy Applications<br/>./scripts/destroy-applications.sh"]
+    
+    DestroyApps --> AppsStopped["💰 Cost Savings Mode<br/>~$0.10/month (99% reduction)"]
+    AppsStopped --> Resume{"🚀 Resume Work?"}
+    
+    Resume -->|Yes| QuickRedeploy["⚡ Quick Redeploy<br/>cdk deploy --all<br/>2 minutes"]
+    Resume -->|No| StayLow["💾 Stay in Savings Mode<br/>Foundation preserved"]
+    
+    QuickRedeploy --> ActiveDev
+    StayLow --> Resume
+    KeepRunning --> Pause
+    
+    %% Long-term options
+    AppsStopped --> LongTerm{"🤔 Long-term Plans?"}
+    LongTerm -->|Archive| DestroyEverything["🗑️ Destroy Everything<br/>./scripts/destroy-everything.sh"]
+    LongTerm -->|Continue| StayLow
+    
+    DestroyEverything --> FullCleanup["🧹 Complete Cleanup<br/>Only Control Tower remains"]
+    FullCleanup --> RebuildDecision{"🔄 Rebuild Later?"}
+    
+    RebuildDecision -->|Yes| FullRebuild["🏗️ Full Rebuild Required<br/>./scripts/setup-complete-environment.sh<br/>15 minutes"]
+    RebuildDecision -->|No| AccountClosure["📋 Manual Account Closure<br/>AWS Console (60-90 days)"]
+    
+    FullRebuild --> ActiveDev
+    
+    classDef active fill:#e8f5e8,stroke:#4caf50,stroke-width:2px
+    classDef savings fill:#fff3e0,stroke:#ff9800,stroke-width:2px
+    classDef destruction fill:#ffebee,stroke:#f44336,stroke-width:2px
+    
+    class ActiveDev,QuickRedeploy,KeepRunning active
+    class AppsStopped,StayLow,DestroyApps savings
+    class DestroyEverything,FullCleanup,AccountClosure destruction
+```
+
+## Smart Cost Management Strategy
+
+```mermaid
+graph LR
+    Developer["👤 Developer"] --> DevPhase{"🔍 Development Phase?"}
+    
+    DevPhase -->|Active Coding| FullStack["🚀 Full Stack Deployed<br/>All environments active<br/>$35-70/month"]
+    DevPhase -->|Break/Weekend| Smart["🧠 Smart Savings Mode"]
+    DevPhase -->|Demo Day| Demo["🎯 Demo Configuration"]
+    DevPhase -->|Long Break| Archive["📦 Archive Mode"]
+    
+    Smart --> DestroyApps["🗑️ Destroy Applications<br/>5 minutes"]
+    DestroyApps --> Foundation["🏗️ Foundation Preserved<br/>- Control Tower accounts<br/>- CDK bootstrap<br/>- SSO profiles<br/>$0.10/month"]
+    Foundation --> ReadyResume["⚡ Ready for 2-min Resume"]
+    
+    Demo --> PreDemo["🚀 Before Demo<br/>cdk deploy --all"]
+    PreDemo --> LiveDemo["📺 Live Demo<br/>All endpoints working"]
+    LiveDemo --> PostDemo["🗑️ After Demo<br/>destroy-applications.sh"]
+    PostDemo --> Foundation
+    
+    Archive --> NuclearOption["☢️ Nuclear Option<br/>destroy-everything.sh"]
+    NuclearOption --> OnlyAccounts["🏢 Only Control Tower<br/>Manual account closure available"]
+    OnlyAccounts --> StartFresh["🆕 Start Fresh<br/>Full 1.5-hour setup"]
+    
+    ReadyResume --> QuickReturn["🔄 Quick Return<br/>cdk deploy --all<br/>2 minutes"]
+    QuickReturn --> FullStack
+```
+
+## Cost Optimization Decision Tree
+
+```mermaid
+graph TD
+    Start["💭 Development Pause"] --> Duration{"⏰ How Long?"}
+    
+    Duration -->|"< 1 day"| KeepRunning["💻 Keep Running<br/>Quick access more valuable"]
+    Duration -->|"1-7 days"| Option1["🎯 Option 1: Destroy Apps<br/>./scripts/destroy-applications.sh"]
+    Duration -->|"1-4 weeks"| Option1
+    Duration -->|"1+ months"| Option2["☢️ Option 2: Destroy Everything<br/>./scripts/destroy-everything.sh"]
+    Duration -->|"Indefinite"| Option3["🗑️ Option 3: Close Accounts<br/>Manual AWS Console"]
+    
+    Option1 --> Savings1["💰 Saves: $36-120/month<br/>⏱️ Time: 5 minutes<br/>🔄 Resume: 2 minutes"]
+    Option2 --> Savings2["💰 Saves: $40-125/month<br/>⏱️ Time: 15 minutes<br/>🔄 Resume: 15 minutes"]
+    Option3 --> Savings3["💰 Saves: $40-125/month<br/>⏱️ Time: 60-90 days<br/>🔄 Resume: 1.5 hours"]
+    
+    KeepRunning --> ActiveCost["💸 Active Cost: $35-70/month<br/>✅ Instant access"]
+    Savings1 --> FoundationCost["💸 Foundation Cost: $0.10/month<br/>⚡ 2-minute redeploy"]
+    Savings2 --> MinimalCost["💸 Minimal Cost: $0.10/month<br/>🔧 15-minute rebuild"]
+    Savings3 --> NoCost["💸 No Cost: $0/month<br/>🏗️ Complete rebuild needed"]
+```
+
+This comprehensive flow documentation helps understand how the application works from initial setup through AWS Control Tower to production deployment, including the new consolidated automation approach, TypeScript stack construction, detailed function call flows, modern development benefits, multi-environment deployment patterns, and smart cost management strategies.
