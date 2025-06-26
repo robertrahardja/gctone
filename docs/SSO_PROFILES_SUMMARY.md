@@ -14,11 +14,13 @@ Generated on: Wed Jun 25 15:05:28 +08 2025
 ## Usage
 
 ### CDK Bootstrap
+
 ```bash
 AWS_PROFILE=tar ./scripts/bootstrap-accounts.sh
 ```
 
 ### Individual Account Access
+
 ```bash
 aws sts get-caller-identity --profile tar-dev
 aws sts get-caller-identity --profile tar-staging
@@ -27,6 +29,7 @@ aws sts get-caller-identity --profile tar-prod
 ```
 
 ### SSO Login (if needed)
+
 ```bash
 aws sso login --profile tar-dev
 aws sso login --profile tar-staging
@@ -35,5 +38,6 @@ aws sso login --profile tar-prod
 ```
 
 ## Configuration Files
+
 - AWS Config: ~/.aws/config
 - Credentials: ~/.aws/credentials (not used with SSO)

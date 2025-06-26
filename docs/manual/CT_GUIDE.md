@@ -1,20 +1,25 @@
 # AWS Control Tower + CDK v2 Greenfield Setup Guide
 
-A complete, step-by-step guide for setting up AWS Control Tower with CDK v2 from scratch. **This guide prioritizes automation and best practices** to minimize manual work and reduce errors.
+A complete, step-by-step guide for setting up AWS Control Tower with CDK v2
+from scratch. **This guide prioritizes automation and best practices** to
+minimize manual work and reduce errors.
 
-> **🌍 Universal Guide**: Works in any AWS region. Examples show Singapore (ap-southeast-1) but all commands work globally.
+> **🌍 Universal Guide**: Works in any AWS region. Examples show Singapore
+> (ap-southeast-1) but all commands work globally.
 
 ---
 
 ## 🚀 Setup Overview: Manual vs Automated
 
 ### **⏱️ Time Investment**
+
 - **Total Time**: ~1.5 hours (was ~4 hours before consolidation)
 - **Manual Work**: ~45 minutes (Control Tower setup only)
 - **Automated Work**: ~10 minutes (single consolidated script)
 - **Wait Time**: ~35 minutes (AWS provisioning, reduced with better detection)
 
 ### **🎯 Best Practice Approach**
+
 1. **Phase 1**: Manual prerequisites & Control Tower setup (cannot be automated)
 2. **Phase 2**: **Single automated command** for complete post-setup
 3. **Phase 3**: Email confirmations & verification
@@ -24,31 +29,31 @@ A complete, step-by-step guide for setting up AWS Control Tower with CDK v2 from
 ## 📋 What's Manual vs Automated
 
 ### **❌ MANUAL (Cannot Be Automated - AWS Security Requirements)**
+
 | Task | Why Manual | Time |
 |------|------------|------|
 | **Root Account MFA** | Security verification required | 5 min |
-| **Control Tower Setup** | Legal acceptance & organizational decisions | 30 min |
+| **Control Tower Setup** | Legal acceptance & org decisions | 30 min |
 | **Email Confirmations** | AWS security requirement | 5 min |
 | **SSO Login Refresh** | Security tokens expire | 2 min |
 
 ### **✅ AUTOMATED (Zero Manual Work After Control Tower)**
+
 | Task | Script | What It Does |
 |------|---------|-------------|
-| **Account Discovery** | `setup-complete-environment.sh` | Find all Control Tower account IDs |
-| **SSO Setup** | Built-in | Create profiles, assign users, wait for access |
-| **CDK Bootstrap** | Built-in | All accounts bootstrapped in parallel |
-| **Validation** | Built-in | Comprehensive health checks |
-| **Application Deployment** | `deploy-applications.sh` | Multi-environment deployment |
-| **Cost Management** | `destroy-applications.sh` | Save 99% costs, 2-min redeploy |
-| **Cost Protection** | `create-budgets.sh` | Billing alerts, budgets, notifications |
+| **Complete Environment** | `up.sh` | Complete setup: discovery, SSO, CDK bootstrap, validation, cost protection, deployment |
+| **Smart Cost Management** | `down.sh` | 4 options: Smart savings, deep clean, nuclear, status check |
 
-### **🎯 Modern Approach: Single Command Setup**
+### **🎯 Ultra-Modern Approach: 2-Script Solution**
+
 ```bash
-# After Control Tower setup, ONE command does everything:
-./scripts/setup-complete-environment.sh
+# After Control Tower setup, TWO commands handle everything:
+./scripts/up.sh    # Complete environment setup (15 minutes)
+./scripts/down.sh  # Smart cost management (2-15 minutes)
 ```
 
-> **💡 Best Practice**: This guide uses **maximum automation** to eliminate human error and reduce setup time by 70%.
+> **💡 Best Practice**: This guide uses **maximum automation** to eliminate
+> human error and reduce setup time by 70%.
 
 ---
 
@@ -59,43 +64,50 @@ A complete, step-by-step guide for setting up AWS Control Tower with CDK v2 from
 For a **brand new AWS organization**, here's exactly what you'll do:
 
 #### **Phase 1: Prerequisites (15 minutes - Manual)**
+
 1. ✅ Set up root account MFA
-2. ✅ Create IAM admin user  
+2. ✅ Create IAM admin user
 3. ✅ Install tools (Node.js, AWS CLI, CDK)
 4. ✅ Configure AWS SSO profile
 
 #### **Phase 2: Control Tower Setup (30 minutes - Manual)**
+
 1. ✅ Run Control Tower wizard in AWS Console
 2. ✅ Configure core accounts (Audit, Log Archive)
 3. ✅ Wait for AWS to provision everything
 
-#### **Phase 3: Complete Automation (10 minutes - Automated)**
+#### **Phase 3: Complete Automation (15 minutes - Automated)**
+
 ```bash
 # Single command does everything:
-./scripts/setup-complete-environment.sh
+./scripts/up.sh
 ```
 
 #### **Phase 4: Email Confirmations (5 minutes - Manual)**
+
 1. ✅ Check email inbox
 2. ✅ Click "Confirm subscription" on all AWS SNS emails
 
 ### **🎯 What You Get**
+
 - **7 AWS accounts** (Management, Audit, Log Archive, Dev, Staging, Shared, Prod)
 - **Working SSO profiles** for all environments (tar-dev, tar-staging, etc.)
 - **CDK bootstrap complete** in all accounts
-- **Ready for immediate deployment** 
+- **Ready for immediate deployment**
 - **Enterprise-grade governance** and security baseline
 - **Production-ready infrastructure** you can build upon
 - **Smart cost management** with instant destroy/redeploy capabilities
 
 ### **💰 Total Cost & Smart Savings**
+
 - **Setup cost**: $0 (all automation is free)
 - **Active development**: ~$35-70 USD/month
 - **Cost savings mode**: ~$0.10 USD/month (99% reduction)
 - **Redeploy time**: 2 minutes (instant resume)
 - **ROI**: Saves 50+ hours vs manual AWS setup
 
-> **🚀 Ready to start?** Jump to [Phase 1: Prerequisites](#-phase-1-prerequisites-and-environment-setup) below.
+> **🚀 Ready to start?** Check [GREENFIELD_MANUAL_SETUP.md](./GREENFIELD_MANUAL_SETUP.md)
+> for complete manual prerequisites, then run `./scripts/up.sh`.
 
 ---
 
@@ -104,8 +116,9 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 ### Monthly Cost Estimates
 
 #### **Core Control Tower Infrastructure** (Required)
+
 - **AWS Organizations**: Free
-- **Control Tower Service**: Free 
+- **Control Tower Service**: Free
 - **CloudTrail Organization Trail**: ~$2-5/month (depends on API calls)
 - **AWS Config**: ~$10-20/month (all accounts, basic rules)
 - **S3 Storage (Logs)**: ~$5-15/month (CloudTrail + Config data)
@@ -114,14 +127,16 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 **Infrastructure Subtotal: $22-50/month**
 
 #### **Hello World Applications** (Per Environment)
+
 - **Lambda Functions**: ~$0.20/month per environment (minimal usage)
 - **API Gateway HTTP API**: ~$1/month per environment (1000 requests/month)
 - **CloudWatch Log Groups**: ~$0.50/month per environment
 
-**Per Environment: ~$1.70/month**  
+**Per Environment: ~$1.70/month**
 **All 4 Environments: ~$7/month**
 
 #### **Cost Management Services** (Optional but Recommended)
+
 - **AWS Budgets**: $0.20/month per budget (5 budgets = $1/month)
 - **CloudWatch Billing Alarms**: ~$0.30/month (3 alarms)
 - **SNS Notifications**: <$0.10/month (email only)
@@ -156,7 +171,7 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 | **CloudWatch** | 10 GB logs free | ~$3-5 |
 | **S3** | 5 GB storage free | ~$1-2 |
 
-**First Month Cost (with free tier): $20-40**  
+**First Month Cost (with free tier): $20-40**
 **Steady State (after 12 months): $30-70**
 
 ### **Built-in Cost Optimization Features**
@@ -171,7 +186,7 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 
 ```
 Management Account:    $10 SGD/month
-Audit Account:         $5 SGD/month  
+Audit Account:         $5 SGD/month
 Log Archive:           $10 SGD/month
 Development:           $10 SGD/month
 Staging:               $10 SGD/month
@@ -183,6 +198,7 @@ Total Budget:          $65 SGD/month (with buffer)
 ### **ROI Justification**
 
 **What You Get for $35-70/month:**
+
 - ✅ Enterprise-grade governance (normally $1000s/month consultant fees)
 - ✅ Multi-account security baseline
 - ✅ Automated compliance monitoring
@@ -234,14 +250,14 @@ Total Budget:          $65 SGD/month (with buffer)
   # macOS with Homebrew
   brew install node@22
   brew link node@22
-  
+
   # OR use nvm
   nvm install 22
   nvm use 22
   nvm alias default 22
-  
+
   # OR Ubuntu/Debian
-  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+  curl -fsSL <https://deb.nodesource.com/setup_22.x> | sudo -E bash -
   sudo apt-get install -y nodejs
   ```
 
@@ -249,9 +265,9 @@ Total Budget:          $65 SGD/month (with buffer)
   ```bash
   # macOS
   brew install awscli
-  
+
   # OR Linux
-  curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+  curl "<https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip"> -o "awscliv2.zip"
   unzip awscliv2.zip
   sudo ./aws/install --update
   ```
@@ -556,8 +572,8 @@ export const core_accounts = {
 
 - [ ] **Log into AWS Console with ROOT account credentials**
 - [ ] **Navigate to Control Tower console**
-  - Go to: https://console.aws.amazon.com/controltower/
-  - 🇸🇬 Singapore: https://ap-southeast-1.console.aws.amazon.com/controltower/
+  - Go to: <https://console.aws.amazon.com/controltower/>
+  - 🇸🇬 Singapore: <https://ap-southeast-1.console.aws.amazon.com/controltower/>
 - [ ] **Verify you are in the correct region** (top-right corner)
   - US East 1: `us-east-1`
   - 🇸🇬 Singapore: `ap-southeast-1`
@@ -722,7 +738,7 @@ export const core_accounts = {
     - [ ] **Email recipients:** Your primary email
     - [ ] **Alert name:** `50% Budget Alert`
   - [ ] **Alert 2:** `80%` of budgeted amount
-    - [ ] **Threshold:** `80` percent of budget  
+    - [ ] **Threshold:** `80` percent of budget
     - [ ] **Email recipients:** Your primary email + team lead
     - [ ] **Alert name:** `80% Budget Alert - Action Required`
   - [ ] **Alert 3:** `100%` of budgeted amount
@@ -896,14 +912,14 @@ After Control Tower setup completes, you have three options:
   ```
   This single script will automatically:
   - ✅ Discover all Control Tower account IDs
-  - ✅ Set up SSO user assignments  
+  - ✅ Set up SSO user assignments
   - ✅ Create SSO profiles (tar-dev, tar-staging, etc.)
   - ✅ Wait for SSO access to become ready
   - ✅ Bootstrap CDK in all accounts
   - ✅ Validate the complete setup
 
   **⏱️ Time**: 10-15 minutes total (mostly waiting for AWS provisioning)
-  
+
   **✅ Perfect for**: New projects, greenfield setups, first-time users
 
 #### Option B: Individual Automated Steps
@@ -917,7 +933,7 @@ If you prefer to run steps individually or troubleshoot issues:
 
 - [ ] **Bootstrap CDK only** (after SSO is working):
   ```bash
-  ./scripts/bootstrap-accounts.sh  
+  ./scripts/bootstrap-accounts.sh
   ```
 
 - [ ] **Validate everything:**
@@ -962,7 +978,7 @@ For **new projects**, automate the entire user creation and permission assignmen
 - [ ] **Use the UserManagement CDK construct** in your main stack:
   ```typescript
   import { UserManagement } from './lib/constructs/user-management';
-  
+
   // Add to your main stack
   new UserManagement(this, 'UserManagement', {
     identityStoreId: 'd-xxxxxxxxxx', // From IAM Identity Center
@@ -1038,7 +1054,7 @@ This script displays the exact steps with your specific account IDs and email ad
 
 **Option B: Manual Steps:**
 
-1. **Go to [IAM Identity Center Console](https://console.aws.amazon.com/singlesignon)**
+1. **Go to [IAM Identity Center Console](<https://console.aws.amazon.com/singlesignon)**>
 
 2. **Create Permission Set (if not exists):**
    - Multi-account permissions → Permission sets → **Create permission set**
@@ -1052,7 +1068,7 @@ This script displays the exact steps with your specific account IDs and email ad
    - Select: `AdminAccess` permission set → **Next** → **Submit**
    - Repeat for:
      - Staging account → `testawsrahardja+staging@gmail.com`
-     - Shared account → `testawsrahardja+shared@gmail.com`  
+     - Shared account → `testawsrahardja+shared@gmail.com`
      - Production account → `testawsrahardja+prod@gmail.com`
 
 4. **Wait for provisioning** (2-3 minutes per assignment)
@@ -1114,7 +1130,7 @@ export const handler = async (
 ): Promise<APIGatewayProxyResult> => {
   // Log incoming request for debugging and monitoring
   console.log('event received:', JSON.stringify(event, null, 2));
-  
+
   const responseBody: ResponseBody = {
     message: process.env.HELLO_WORLD_MESSAGE || 'Hello World!',
     environment: process.env.ENVIRONMENT || 'unknown',
@@ -1127,7 +1143,7 @@ export const handler = async (
     // 🇸🇬 Singapore addition: add location metadata
     // location: {
     //   country: 'singapore',
-    //   region: 'ap-southeast-1', 
+    //   region: 'ap-southeast-1',
     //   timezone: 'asia/singapore',
     //   localtime: new Date().toLocaleString('en-sg', {
     //     timeZone: 'asia/singapore'
@@ -1140,7 +1156,7 @@ export const handler = async (
       nodeVersion: process.version
     }
   };
-  
+
   const response: APIGatewayProxyResult = {
     statusCode: 200,
     headers: {
@@ -1151,7 +1167,7 @@ export const handler = async (
     },
     body: JSON.stringify(responseBody, null, 2)
   };
-  
+
   return response;
 };
 ```
@@ -1172,7 +1188,7 @@ export const handler = async (
   event: APIGatewayProxyEvent,
   context: Context
 ): Promise<APIGatewayProxyResult> => {
-  
+
   const responseBody: HealthResponseBody = {
     status: 'healthy',
     environment: process.env.ENVIRONMENT || 'unknown',
@@ -1182,7 +1198,7 @@ export const handler = async (
 
   const response: APIGatewayProxyResult = {
     statusCode: 200,
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*'
     },
@@ -1773,7 +1789,7 @@ echo "📋 step 4: checking control tower status..."
 echo "⚠️  manual setup required:"
 echo "1. go to aws control tower console"
 # 🇸🇬 singapore: add specific url
-# echo "1. go to: https://ap-southeast-1.console.aws.amazon.com/controltower/"
+# echo "1. go to: <https://ap-southeast-1.console.aws.amazon.com/controltower/">
 echo "2. click 'set up landing zone'"
 # 🇸🇬 singapore: add region selection step
 # echo "3. select home region: asia pacific (singapore) ap-southeast-1"
@@ -1874,7 +1890,7 @@ done
   ```bash
   ./scripts/fix-missing-controltower-config.sh
   ```
-  
+
 > **⚠️ CRITICAL**: If you went through Control Tower setup with defaults, you may be missing billing alerts and budgets. This script checks and fixes missing HIGH PRIORITY features that prevent cost disasters.
 
 ### 8.3 Update Email Configuration
@@ -1884,7 +1900,7 @@ done
   ./scripts/get-account-ids.sh
   ./scripts/sync-account-emails.sh
   ```
-  
+
 > **Note**: The sync script now automatically updates `lib/config/accounts.ts` with the correct emails from your AWS organization. It creates a backup file first for safety.
 
 ### 8.4 CDK Bootstrap and Deploy
@@ -1922,7 +1938,7 @@ done
   ```bash
   npm run setup:complete
   ```
-  
+
 > **Note**: This automated approach now includes automatic email synchronization, so no manual configuration updates are needed.
 
 ### 8.6 Individual Environment Commands
@@ -1956,7 +1972,7 @@ AWS_PROFILE=your-profile ./scripts/verify-complete-setup.sh
 
 **🚨 CRITICAL: Cost Protection**
 - [ ] **6 CloudWatch alarms** with SGD thresholds
-- [ ] **6 AWS budgets** with USD amounts  
+- [ ] **6 AWS budgets** with USD amounts
 - [ ] **Email confirmations** clicked in your inbox
 - [ ] **SNS subscriptions** all confirmed (not pending)
 
@@ -1971,7 +1987,7 @@ AWS_PROFILE=your-profile ./scripts/verify-complete-setup.sh
 # Verify cost protection (should show 6 alarms)
 AWS_PROFILE=your-profile aws cloudwatch describe-alarms --query 'MetricAlarms[?MetricName==`EstimatedCharges`] | length(@)'
 
-# Verify budgets (should show 6 budgets)  
+# Verify budgets (should show 6 budgets)
 AWS_PROFILE=your-profile aws budgets describe-budgets --account-id $(aws sts get-caller-identity --query Account --output text) --query 'length(Budgets)'
 
 # Test application endpoints
@@ -2022,7 +2038,7 @@ npm install aws-cdk-lib@latest constructs@latest
 
 # This automatically handles:
 # ✅ Account discovery
-# ✅ SSO setup and user assignments  
+# ✅ SSO setup and user assignments
 # ✅ Profile creation (tar-dev, tar-staging, etc.)
 # ✅ CDK bootstrap in all accounts
 # ✅ Validation and testing
@@ -2165,7 +2181,7 @@ AWS_PROFILE=your-profile ./scripts/validate-complete-setup.sh
 ```bash
 # Cost Protection (do these first, in order)
 ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/fix-missing-controltower-config.sh
-ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/create-per-account-alerts.sh  
+ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/create-per-account-alerts.sh
 AWS_PROFILE=your-profile ./scripts/create-budgets.sh
 
 # Account Setup
@@ -2270,12 +2286,12 @@ this template includes several cost optimization features:
 
 this simplified template provides:
 
-✅ **modern cdk v2** with aws-cdk-lib  
-✅ **node.js 22** lambda runtime  
-✅ **cost-optimized** http apis and arm64 architecture  
-✅ **multi-environment** structure (dev/staging/prod/shared)  
-✅ **simple deployment** scripts  
-✅ **universal template** - works in any region  
+✅ **modern cdk v2** with aws-cdk-lib
+✅ **node.js 22** lambda runtime
+✅ **cost-optimized** http apis and arm64 architecture
+✅ **multi-environment** structure (dev/staging/prod/shared)
+✅ **simple deployment** scripts
+✅ **universal template** - works in any region
 ✅ **greenfield ready** - minimal dependencies
 
 the template removes all singapore-specific compliance features while maintaining the solid multi-account control tower foundation you can build upon anywhere.
@@ -2301,3 +2317,4 @@ all cost optimizations and architectural benefits remain the same!
 - access keys: only on iam user, never on root account
 
 this approach provides the same functionality with enterprise-grade security! 🚀
+
