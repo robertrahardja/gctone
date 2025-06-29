@@ -5,7 +5,7 @@ on:
       git_ref:
         description: 'Git reference to deploy (branch, tag, or commit SHA)'
         required: true
-        default: 'main'
+        default: 'master'
       source_environment:
         description: 'Source environment for promotion'
         required: true
@@ -139,7 +139,7 @@ jobs:
           echo "Region: ${{ env.AWS_REGION }}"
           echo "Git ref: ${{ inputs.git_ref }}"
           
-          cdk deploy helloworld-staging \
+          cdk deploy ctone-staging \
             --require-approval never \
             --outputs-file outputs-staging.json \
             --context accountId=521744733620
@@ -148,8 +148,8 @@ jobs:
         id: endpoints
         run: |
           if [ -f outputs-staging.json ]; then
-            API_URL=$(cat outputs-staging.json | jq -r '.["helloworld-staging"]["helloworldapiurl"] // empty')
-            HEALTH_URL=$(cat outputs-staging.json | jq -r '.["helloworld-staging"]["helloworldhealthcheckurl"] // empty')
+            API_URL=$(cat outputs-staging.json | jq -r '.["ctone-staging"]["ctoneappapiurl961F3EC2"] // empty')
+            HEALTH_URL=$(cat outputs-staging.json | jq -r '.["ctone-staging"]["ctoneapphealthcheckurl9F284F62"] // empty')
             
             echo "api_url=$API_URL" >> $GITHUB_OUTPUT
             echo "health_url=$HEALTH_URL" >> $GITHUB_OUTPUT

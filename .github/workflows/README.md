@@ -58,11 +58,11 @@ graph LR
 
 ### 2. Development Deployment (CD)
 **File**: `deploy-dev.yml`  
-**Triggers**: Push to main branch
+**Triggers**: Push to master branch
 
 ```mermaid
 graph LR
-    Main[Push to Main] --> Build[Build & Validate]
+    Main[Push to Master] --> Build[Build & Validate]
     Build --> Deploy[Deploy to Dev]
     Deploy --> Health[Health Checks]
     Health --> Tests[Integration Tests]
@@ -204,7 +204,7 @@ cdk deploy --all
 
 ### Development Workflow
 ```
-Feature Branch → Pull Request → CI Validation → Merge to Main → Auto Deploy Dev
+Feature Branch → Pull Request → CI Validation → Merge to Master → Auto Deploy Dev
 ```
 
 ### Staging Promotion

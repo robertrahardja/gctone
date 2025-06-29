@@ -123,7 +123,7 @@ jobs:
         run: |
           echo "🔍 Checking ${{ matrix.environment }} environment status..."
           
-          stack_name="helloworld-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
+          stack_name="ctone-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
           
           if aws cloudformation describe-stacks --stack-name "$stack_name" --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
             echo "status=active" >> $GITHUB_OUTPUT
@@ -138,7 +138,7 @@ jobs:
         run: |
           echo "🧹 Performing smart cleanup for ${{ matrix.environment }}..."
           
-          stack_name="helloworld-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
+          stack_name="ctone-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
           
           # Destroy the application stack (preserves CDK bootstrap and infrastructure)
           echo "Destroying application stack: $stack_name"
@@ -177,7 +177,7 @@ jobs:
           echo "Restore time: ${{ inputs.restore_time }} Singapore time"
           echo ""
           echo "💡 Manual restore command:"
-          echo "   cdk deploy helloworld-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
+          echo "   cdk deploy ctone-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
 
   deep-cleanup:
     name: Deep Cost Cleanup
@@ -216,7 +216,7 @@ jobs:
         run: |
           echo "🗑️ Performing deep cleanup for ${{ matrix.environment }}..."
           
-          stack_name="helloworld-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
+          stack_name="ctone-${{ matrix.environment == 'development' && 'dev' || matrix.environment }}"
           
           # Destroy application stack
           echo "Destroying application stack: $stack_name"

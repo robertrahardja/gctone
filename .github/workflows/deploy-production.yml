@@ -218,9 +218,9 @@ jobs:
           echo "💾 Creating deployment backup..."
           
           # Get current stack info before deployment
-          if aws cloudformation describe-stacks --stack-name helloworld-prod --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+          if aws cloudformation describe-stacks --stack-name ctone-prod --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
             echo "📋 Current production stack found"
-            current_template=$(aws cloudformation get-template --stack-name helloworld-prod --query 'TemplateBody' --output json)
+            current_template=$(aws cloudformation get-template --stack-name ctone-prod --query 'TemplateBody' --output json)
             echo "backup_available=true" >> $GITHUB_OUTPUT
           else
             echo "📋 No existing production stack found"
@@ -236,8 +236,8 @@ jobs:
           echo "🩺 Pre-deployment health check..."
           
           # Check if production is currently healthy
-          if aws cloudformation describe-stacks --stack-name helloworld-prod --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
-            stack_status=$(aws cloudformation describe-stacks --stack-name helloworld-prod --query 'Stacks[0].StackStatus' --output text)
+          if aws cloudformation describe-stacks --stack-name ctone-prod --region ${{ env.AWS_REGION }} > /dev/null 2>&1; then
+            stack_status=$(aws cloudformation describe-stacks --stack-name ctone-prod --query 'Stacks[0].StackStatus' --output text)
             echo "Current stack status: $stack_status"
             
             if [[ "$stack_status" != "CREATE_COMPLETE" && "$stack_status" != "UPDATE_COMPLETE" ]]; then
@@ -265,7 +265,7 @@ jobs:
           case "${{ inputs.deployment_strategy }}" in
             "standard")
               echo "Executing standard deployment..."
-              cdk deploy helloworld-prod \
+              cdk deploy ctone-prod \
                 --require-approval never \
                 --outputs-file outputs-prod.json \
                 --context accountId=668427974646
@@ -274,7 +274,7 @@ jobs:
               echo "Executing blue-green deployment..."
               # In a real implementation, this would deploy to a new stack
               # and switch traffic after validation
-              cdk deploy helloworld-prod \
+              cdk deploy ctone-prod \
                 --require-approval never \
                 --outputs-file outputs-prod.json \
                 --context accountId=668427974646
@@ -282,7 +282,7 @@ jobs:
             "canary")
               echo "Executing canary deployment..."
               # In a real implementation, this would gradually shift traffic
-              cdk deploy helloworld-prod \
+              cdk deploy ctone-prod \
                 --require-approval never \
                 --outputs-file outputs-prod.json \
                 --context accountId=668427974646
@@ -298,8 +298,8 @@ jobs:
         id: endpoints
         run: |
           if [ -f outputs-prod.json ]; then
-            API_URL=$(cat outputs-prod.json | jq -r '.["helloworld-prod"]["helloworldapiurl"] // empty')
-            HEALTH_URL=$(cat outputs-prod.json | jq -r '.["helloworld-prod"]["helloworldhealthcheckurl"] // empty')
+            API_URL=$(cat outputs-prod.json | jq -r '.["ctone-prod"]["ctoneappapiurl961F3EC2"] // empty')
+            HEALTH_URL=$(cat outputs-prod.json | jq -r '.["ctone-prod"]["ctoneapphealthcheckurl9F284F62"] // empty')
             
             echo "api_url=$API_URL" >> $GITHUB_OUTPUT
             echo "health_url=$HEALTH_URL" >> $GITHUB_OUTPUT

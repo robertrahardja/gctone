@@ -1,7 +1,7 @@
 name: Deploy to Development
 on:
   push:
-    branches: [main]
+    branches: [master]
   workflow_dispatch:
     inputs:
       force_deploy:
@@ -77,7 +77,7 @@ jobs:
           echo "Account: 803133978889"
           echo "Region: ${{ env.AWS_REGION }}"
           
-          cdk deploy helloworld-dev \
+          cdk deploy ctone-dev \
             --require-approval never \
             --outputs-file outputs-dev.json \
             --context accountId=803133978889
@@ -86,8 +86,8 @@ jobs:
         id: endpoints
         run: |
           if [ -f outputs-dev.json ]; then
-            API_URL=$(cat outputs-dev.json | jq -r '.["helloworld-dev"]["helloworldapiurl"] // empty')
-            HEALTH_URL=$(cat outputs-dev.json | jq -r '.["helloworld-dev"]["helloworldhealthcheckurl"] // empty')
+            API_URL=$(cat outputs-dev.json | jq -r '.["ctone-dev"]["ctoneappapiurl961F3EC2"] // empty')
+            HEALTH_URL=$(cat outputs-dev.json | jq -r '.["ctone-dev"]["ctoneapphealthcheckurl9F284F62"] // empty')
             
             echo "api_url=$API_URL" >> $GITHUB_OUTPUT
             echo "health_url=$HEALTH_URL" >> $GITHUB_OUTPUT
@@ -185,7 +185,7 @@ jobs:
           echo ""
           echo "💡 To save costs when not developing:"
           echo "   ./scripts/down.sh (saves 99% of costs)"
-          echo "   Resume with: cdk deploy helloworld-dev"
+          echo "   Resume with: cdk deploy ctone-dev"
           
       - name: Slack notification
         if: always()
