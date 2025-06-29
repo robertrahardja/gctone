@@ -3,7 +3,7 @@
 /**
  * CDK APPLICATION ENTRY POINT
  * 
- * This is the main entry point for the AWS CDK application that deploys the Hello World
+ * This is the main entry point for the AWS CDK application that deploys the CTone
  * serverless application across multiple AWS accounts using AWS Control Tower governance.
  * This file orchestrates the creation of CloudFormation stacks for each environment
  * with appropriate configurations and AWS account targeting.
@@ -38,7 +38,7 @@
  * Usage:
  * - `cdk synth`: Generate CloudFormation templates for all environments
  * - `cdk deploy`: Deploy all stacks (requires appropriate AWS credentials)
- * - `cdk deploy helloworld-dev`: Deploy only the development environment
+ * - `cdk deploy ctone-dev`: Deploy only the development environment
  * - `cdk destroy`: Remove all deployed resources
  */
 
@@ -75,8 +75,8 @@ const app = new cdk.App();
  * - Region: CDK default region with us-east-1 fallback
  * 
  * Stack Naming Convention:
- * - Format: helloworld-{environment}
- * - Examples: helloworld-dev, helloworld-staging, helloworld-prod
+ * - Format: ctone-{environment}
+ * - Examples: ctone-dev, ctone-staging, ctone-prod
  * - Enables easy identification and targeted deployment
  */
 Object.entries(accounts).forEach(([key, accountconfig]) => {
@@ -92,7 +92,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
    * @param key - Environment key (dev, staging, shared, prod)
    * @param accountconfig - Environment-specific configuration object
    */
-  new applicationstack(app, `helloworld-${key}`, {
+  new applicationstack(app, `ctone-${key}`, {
     accountconfig: accountconfig,  // Pass environment configuration to stack
 
     /**
@@ -133,7 +133,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
      * Provides human-readable information about the stack purpose
      * and environment for CloudFormation console display.
      */
-    description: `Hello World application for ${accountconfig.name} environment`,
+    description: `CTone application for ${accountconfig.name} environment`,
     // 🇸🇬 Singapore customization: add "(Singapore)" to description
 
     /**
@@ -142,7 +142,7 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
      * Explicitly sets the CloudFormation stack name for consistent
      * naming across environments and easy identification.
      */
-    stackName: `helloworld-${key}`,
+    stackName: `ctone-${key}`,
   });
 });
 

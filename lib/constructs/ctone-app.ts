@@ -1,7 +1,7 @@
 /**
- * HELLO WORLD APPLICATION CONSTRUCT
+ * CTONE APPLICATION CONSTRUCT
  * 
- * This file defines a reusable CDK construct that creates a complete serverless "Hello World"
+ * This file defines a reusable CDK construct that creates a complete serverless "CTone"
  * application optimized for cost efficiency and multi-environment deployment. The construct
  * demonstrates modern AWS serverless best practices while maintaining minimal operational overhead.
  * 
@@ -47,9 +47,9 @@ import {
 import { accountconfig } from "../config/accounts";
 
 /**
- * Props interface for the HelloWorldApp construct.
+ * Props interface for the CToneApp construct.
  * 
- * This interface defines the required configuration for instantiating the HelloWorldApp construct.
+ * This interface defines the required configuration for instantiating the CToneApp construct.
  * It follows CDK best practices by accepting an account configuration object that contains
  * all environment-specific settings needed to deploy the application appropriately.
  * 
@@ -59,14 +59,14 @@ import { accountconfig } from "../config/accounts";
  * - Log retention policies based on environment type
  * - Resource naming and tagging strategies
  */
-export interface helloworldappprops {
+export interface ctoneappprops {
   accountconfig: accountconfig;
 }
 
 /**
- * HelloWorldApp Construct Class
+ * CToneApp Construct Class
  * 
- * A reusable CDK construct that creates a complete serverless Hello World application
+ * A reusable CDK construct that creates a complete serverless CTone application
  * with cost optimization and environment-specific configuration. This construct
  * encapsulates all the AWS resources needed for a basic web API including:
  * 
@@ -89,7 +89,7 @@ export interface helloworldappprops {
  * - CORS support for web applications
  * - Clean separation of concerns
  */
-export class helloworldapp extends Construct {
+export class ctoneapp extends Construct {
   /**
    * The HTTP API Gateway instance.
    * Exposed as public readonly to allow other stacks or constructs
@@ -105,9 +105,9 @@ export class helloworldapp extends Construct {
   public readonly lambda: lambda.IFunction;
 
   /**
-   * HelloWorldApp Constructor
+   * CToneApp Constructor
    * 
-   * Creates all AWS resources needed for the Hello World application with
+   * Creates all AWS resources needed for the CTone application with
    * environment-specific configuration. The constructor follows a logical
    * order: logging setup, compute resources, API gateway, and outputs.
    * 
@@ -115,7 +115,7 @@ export class helloworldapp extends Construct {
    * @param id - Unique identifier for this construct instance
    * @param props - Configuration object containing account settings
    */
-  constructor(scope: Construct, id: string, props: helloworldappprops) {
+  constructor(scope: Construct, id: string, props: ctoneappprops) {
     super(scope, id);
 
     // Extract account configuration for use throughout the construct
@@ -136,8 +136,8 @@ export class helloworldapp extends Construct {
      * - RemovalPolicy.DESTROY for clean teardown during development
      * - Explicit log group creation (prevents default indefinite retention)
      */
-    const loggroup = new logs.LogGroup(this, "helloworldloggroup", {
-      logGroupName: `/aws/lambda/hello-world-${accountconfig.environment}`,
+    const loggroup = new logs.LogGroup(this, "ctoneloggroup", {
+      logGroupName: `/aws/lambda/ctone-${accountconfig.environment}`,
       retention:
         accountconfig.environment === "prod"
           ? logs.RetentionDays.ONE_MONTH    // Production: longer retention for audit
@@ -168,7 +168,7 @@ export class helloworldapp extends Construct {
      * - Structured error handling and response formatting
      * - No sensitive information exposure in responses
      */
-    this.lambda = new nodejs.NodejsFunction(this, "helloworldfunction", {
+    this.lambda = new nodejs.NodejsFunction(this, "ctonefunction", {
       runtime: lambda.Runtime.NODEJS_22_X,  // Latest LTS Node.js for security and performance
       entry: "lib/lambda/main-handler.ts",   // TypeScript source file
       handler: "handler",                    // Export name from TypeScript file
@@ -176,9 +176,9 @@ export class helloworldapp extends Construct {
       environment: {
         ENVIRONMENT: accountconfig.environment,     // Environment type for internal logic
         ACCOUNT_NAME: accountconfig.name,           // Account name for identification
-        HELLO_WORLD_MESSAGE: accountconfig.helloworldmessage, // Custom environment message
+        CTONE_MESSAGE: accountconfig.ctonemessage, // Custom environment message
       },
-      description: `Hello World Lambda for ${accountconfig.name} environment`, // CloudFormation description
+      description: `CTone Lambda for ${accountconfig.name} environment`, // CloudFormation description
       timeout: Duration.seconds(accountconfig.timeout),      // Environment-specific timeout
       memorySize: accountconfig.memorysize,                  // Environment-specific memory allocation
       logGroup: loggroup,                                    // Link to pre-created log group
@@ -208,9 +208,9 @@ export class helloworldapp extends Construct {
      * - Configurable allowed origins, methods, and headers
      * - Cache control for preflight responses
      */
-    this.api = new apigatewayv2.HttpApi(this, "helloworldapi", {
-      apiName: `Hello World API - ${accountconfig.environment}`,     // Environment-specific naming
-      description: `Hello World HTTP API for ${accountconfig.name} environment`, // CloudFormation description
+    this.api = new apigatewayv2.HttpApi(this, "ctoneapi", {
+      apiName: `CTone API - ${accountconfig.environment}`,     // Environment-specific naming
+      description: `CTone HTTP API for ${accountconfig.name} environment`, // CloudFormation description
       corsPreflight: {
         allowOrigins: ["*"],                           // Allow all origins (customize for production)
         allowMethods: [
@@ -225,7 +225,7 @@ export class helloworldapp extends Construct {
     /**
      * Main API Route Configuration
      * 
-     * Creates the primary route for the Hello World application at the root path (/).
+     * Creates the primary route for the CTone application at the root path (/).
      * Uses HTTP Lambda integration for seamless request/response handling between
      * API Gateway and Lambda function.
      * 
@@ -326,8 +326,8 @@ export class helloworldapp extends Construct {
      */
     new CfnOutput(this, "apiurl", {
       value: this.api.apiEndpoint,                                        // API Gateway endpoint URL
-      description: `Hello World API URL for ${accountconfig.environment}`, // Human-readable description
-      exportName: `helloworldapiurl-${accountconfig.environment}`,        // Cross-stack export name
+      description: `CTone API URL for ${accountconfig.environment}`, // Human-readable description
+      exportName: `ctoneapiurl-${accountconfig.environment}`,        // Cross-stack export name
     });
 
     /**

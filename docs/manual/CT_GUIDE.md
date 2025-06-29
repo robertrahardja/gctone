@@ -30,19 +30,19 @@ minimize manual work and reduce errors.
 
 ### **❌ MANUAL (Cannot Be Automated - AWS Security Requirements)**
 
-| Task | Why Manual | Time |
-|------|------------|------|
-| **Root Account MFA** | Security verification required | 5 min |
+| Task                    | Why Manual                       | Time   |
+| ----------------------- | -------------------------------- | ------ |
+| **Root Account MFA**    | Security verification required   | 5 min  |
 | **Control Tower Setup** | Legal acceptance & org decisions | 30 min |
-| **Email Confirmations** | AWS security requirement | 5 min |
-| **SSO Login Refresh** | Security tokens expire | 2 min |
+| **Email Confirmations** | AWS security requirement         | 5 min  |
+| **SSO Login Refresh**   | Security tokens expire           | 2 min  |
 
 ### **✅ AUTOMATED (Zero Manual Work After Control Tower)**
 
-| Task | Script | What It Does |
-|------|---------|-------------|
-| **Complete Environment** | `up.sh` | Complete setup: discovery, SSO, CDK bootstrap, validation, cost protection, deployment |
-| **Smart Cost Management** | `down.sh` | 4 options: Smart savings, deep clean, nuclear, status check |
+| Task                      | Script    | What It Does                                                                           |
+| ------------------------- | --------- | -------------------------------------------------------------------------------------- |
+| **Complete Environment**  | `up.sh`   | Complete setup: discovery, SSO, CDK bootstrap, validation, cost protection, deployment |
+| **Smart Cost Management** | `down.sh` | 4 options: Smart savings, deep clean, nuclear, status check                            |
 
 ### **🎯 Ultra-Modern Approach: 2-Script Solution**
 
@@ -122,11 +122,12 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 - **CloudTrail Organization Trail**: ~$2-5/month (depends on API calls)
 - **AWS Config**: ~$10-20/month (all accounts, basic rules)
 - **S3 Storage (Logs)**: ~$5-15/month (CloudTrail + Config data)
+- **S3 Requests**: ~$2-5/month (⚠️ **Free tier exhausted after 1-2 weeks**)
 - **CloudWatch Logs**: ~$5-10/month (retention costs)
 
-**Infrastructure Subtotal: $22-50/month**
+**Infrastructure Subtotal: $24-55/month**
 
-#### **Hello World Applications** (Per Environment)
+#### **CTone Applications** (Per Environment)
 
 - **Lambda Functions**: ~$0.20/month per environment (minimal usage)
 - **API Gateway HTTP API**: ~$1/month per environment (1000 requests/month)
@@ -145,34 +146,36 @@ For a **brand new AWS organization**, here's exactly what you'll do:
 
 ### **Total Monthly Cost**
 
-| Region | Monthly Cost | Annual Cost |
-|--------|--------------|-------------|
-| **US East 1 (Virginia)** | $30-60 | $360-720 |
-| **🇸🇬 Singapore (ap-southeast-1)** | $35-70 (+15%) | $420-840 |
+| Region                            | Monthly Cost  | Annual Cost |
+| --------------------------------- | ------------- | ----------- |
+| **US East 1 (Virginia)**          | $30-60        | $360-720    |
+| **🇸🇬 Singapore (ap-southeast-1)** | $35-70 (+15%) | $420-840    |
 
 ### **Cost Breakdown by Account**
 
-| Account | Services | Monthly Cost |
-|---------|----------|--------------|
-| **Management** | Organizations, Control Tower, Billing | $15-25 |
-| **Log Archive** | S3 storage, data transfer | $10-20 |
-| **Audit** | Config aggregation, minimal compute | $5-10 |
-| **Development** | Lambda (128MB), API Gateway, logs | $2-5 |
-| **Staging** | Lambda (256MB), API Gateway, logs | $3-6 |
-| **Shared Services** | Lambda (256MB), API Gateway, logs | $3-6 |
-| **Production** | Lambda (512MB), API Gateway, logs | $4-8 |
+| Account             | Services                              | Monthly Cost |
+| ------------------- | ------------------------------------- | ------------ |
+| **Management**      | Organizations, Control Tower, Billing | $15-25       |
+| **Log Archive**     | S3 storage, data transfer             | $10-20       |
+| **Audit**           | Config aggregation, minimal compute   | $5-10        |
+| **Development**     | Lambda (128MB), API Gateway, logs     | $2-5         |
+| **Staging**         | Lambda (256MB), API Gateway, logs     | $3-6         |
+| **Shared Services** | Lambda (256MB), API Gateway, logs     | $3-6         |
+| **Production**      | Lambda (512MB), API Gateway, logs     | $4-8         |
 
 ### **First Month with AWS Free Tier**
 
-| Service | Free Tier Benefit | Savings |
-|---------|-------------------|---------|
-| **Lambda** | 1M requests/month free | ~$5-10 |
-| **API Gateway** | 1M requests/month free | ~$3-5 |
-| **CloudWatch** | 10 GB logs free | ~$3-5 |
-| **S3** | 5 GB storage free | ~$1-2 |
+| Service         | Free Tier Benefit      | Savings |
+| --------------- | ---------------------- | ------- |
+| **Lambda**      | 1M requests/month free | ~$5-10  |
+| **API Gateway** | 1M requests/month free | ~$3-5   |
+| **CloudWatch**  | 10 GB logs free        | ~$3-5   |
+| **S3**          | 5 GB storage free      | ~$1-2   |
+
+> **⚠️ S3 Request Free Tier Alert**: Control Tower will exhaust your 2000 free S3 requests within 1-2 weeks due to CloudTrail organization logging across 7 accounts. This is **normal and expected** - you'll receive an 85% usage alert around day 10-14. Post-free tier cost is minimal (~$2-5/month).
 
 **First Month Cost (with free tier): $20-40**
-**Steady State (after 12 months): $30-70**
+**Steady State (after 12 months): $32-75**
 
 ### **Built-in Cost Optimization Features**
 
@@ -195,6 +198,33 @@ Production:            $10 SGD/month
 Total Budget:          $65 SGD/month (with buffer)
 ```
 
+### **Common AWS Free Tier Alerts**
+
+#### **Expected S3 Request Alert (Normal Behavior)**
+
+**Alert Message**: "Your AWS account has exceeded 85% of the usage limit for Amazon S3 requests"
+
+**What This Means**:
+- Control Tower CloudTrail is logging API calls from all 7 accounts
+- Organization trail generates ~100-300 S3 requests per day
+- Free tier limit: 2000 requests/month = exhausted in ~10-14 days
+
+**Root Cause Analysis**:
+```bash
+# Your setup generates these S3 requests:
+CloudTrail Organization Trail:  ~1500-1800 requests/month
+AWS Config Service:            ~200-400 requests/month  
+Control Tower Operations:      ~100-200 requests/month
+Total:                        ~1800-2400 requests/month
+```
+
+**Action Required**: ✅ **None** - This is expected and costs <$5/month post-free tier
+
+**Cost Impact**: 
+- Current: $0.014/day (~$0.42/month as of June 24-25)
+- Expected: $2-5/month after free tier exhaustion
+- **This is normal operational cost for enterprise governance**
+
 ### **ROI Justification**
 
 **What You Get for $35-70/month:**
@@ -207,6 +237,7 @@ Total Budget:          $65 SGD/month (with buffer)
 - ✅ Production-ready foundation
 
 **Compared to Alternatives:**
+
 - Manual AWS setup: 40+ hours @ $100/hr = $4000
 - Terraform Enterprise: $20-50/user/month
 - AWS Control Tower: Built-in governance at infrastructure cost only
@@ -220,24 +251,28 @@ Total Budget:          $65 SGD/month (with buffer)
 ### 1.1 System Requirements Check
 
 - [ ] **Check Node.js version** (Need 20+ minimum, 22+ recommended)
+
   ```bash
   node --version
   # Expected: v22.x.x (recommended) or v20.x.x (minimum)
   ```
 
 - [ ] **Check npm version**
+
   ```bash
   npm --version
   # Expected: 10.x.x or higher
   ```
 
 - [ ] **Check AWS CLI version** (need v2.15+)
+
   ```bash
   aws --version
   # Expected: aws-cli/2.15.x or higher
   ```
 
 - [ ] **Check Git version**
+
   ```bash
   git --version
   # Expected: git version 2.40.x or higher
@@ -246,6 +281,7 @@ Total Budget:          $65 SGD/month (with buffer)
 ### 1.2 Install Latest Tools
 
 - [ ] **Install Node.js 22** (choose one method)
+
   ```bash
   # macOS with Homebrew
   brew install node@22
@@ -262,6 +298,7 @@ Total Budget:          $65 SGD/month (with buffer)
   ```
 
 - [ ] **Install/Update AWS CLI v2**
+
   ```bash
   # macOS
   brew install awscli
@@ -304,6 +341,7 @@ Total Budget:          $65 SGD/month (with buffer)
   - "Assign MFA device" → Choose authenticator app
   - Follow setup instructions
 - [ ] **Configure AWS CLI with IAM user credentials**
+
   ```bash
   aws configure
   # AWS Access Key ID: [IAM user access key from above]
@@ -311,7 +349,9 @@ Total Budget:          $65 SGD/month (with buffer)
   # Default region name: us-east-1  # or ap-southeast-1 for Singapore
   # Default output format: json
   ```
+
 - [ ] **Verify configuration**
+
   ```bash
   aws sts get-caller-identity
   # Should show: "arn:aws:iam::account:user/control-tower-admin"
@@ -379,10 +419,13 @@ aws --profile control-tower-admin sts get-caller-identity
 ### 1.4 Install Latest CDK v2
 
 - [ ] **Install CDK v2 globally**
+
   ```bash
   npm install -g aws-cdk@latest
   ```
+
 - [ ] **Verify installation** (should be 2.201.0+)
+
   ```bash
   cdk --version
   # Expected: 2.201.x or higher
@@ -408,31 +451,37 @@ aws --profile control-tower-admin sts get-caller-identity
 ### 2.2 Initial Security Setup
 
 - [ ] **Enable MFA on root account**
+
   - Go to: AWS Console → Account menu (top right) → Security credentials
   - Multi-factor authentication (MFA) → Assign MFA device
   - Use authenticator app (Google Authenticator, Authy, etc.)
 
 - [ ] **Create IAM user for daily operations** (if not done in Phase 1)
+
   - Go to: IAM → Users → Create user
   - User name: `control-tower-admin`
   - Permissions: Attach AdministratorAccess policy directly
   - Create access keys for CLI access
 
 - [ ] **Enable MFA on IAM user**
+
   - IAM → Users → control-tower-admin → Security credentials
   - Assign MFA device
 
 - [ ] **Test IAM user access**
+
   ```bash
   aws sts get-caller-identity
   # Should show IAM user ARN, not root
   ```
 
 - [ ] **Delete root access keys** (if any exist)
+
   - AWS Console → Account menu → Security credentials
   - Delete any existing access keys
 
 - [ ] **Verify security setup is complete**
+
   ```bash
   echo "✅ Security setup complete - ready for Control Tower"
   ```
@@ -444,12 +493,14 @@ aws --profile control-tower-admin sts get-caller-identity
 ### 3.1 Initialize Project
 
 - [ ] **Create project directory**
+
   ```bash
   mkdir simple-control-tower-cdk
   cd simple-control-tower-cdk
   ```
 
 - [ ] **Initialize TypeScript CDK project**
+
   ```bash
   cdk init app --language typescript
   ```
@@ -457,16 +508,19 @@ aws --profile control-tower-admin sts get-caller-identity
 ### 3.2 Install Dependencies
 
 - [ ] **Install core CDK v2 dependencies**
+
   ```bash
   npm install aws-cdk-lib@latest constructs@latest
   ```
 
 - [ ] **Install development dependencies**
+
   ```bash
   npm install --save-dev @types/node@latest @types/aws-lambda@latest
   ```
 
 - [ ] **Verify versions**
+
   ```bash
   npm list aws-cdk-lib
   ```
@@ -474,15 +528,17 @@ aws --profile control-tower-admin sts get-caller-identity
 ### 3.3 Create Directory Structure
 
 - [ ] **Create directory structure**
+
   ```bash
   mkdir -p lib/{stacks,constructs,config,lambda}
   mkdir -p scripts
   ```
 
 - [ ] **Create required files**
+
   ```bash
   touch lib/config/accounts.ts
-  touch lib/constructs/hello-world-app.ts
+  touch lib/constructs/ctone-app.ts
   touch lib/stacks/application-stack.ts
   touch lib/lambda/main-handler.ts
   touch lib/lambda/health-handler.ts
@@ -507,7 +563,7 @@ export interface accountconfig {
   name: string;
   email: string;
   environment: "prod" | "staging" | "dev" | "shared";
-  helloworldmessage: string;
+  ctonemessage: string;
   memorysize: number;
   timeout: number;
 }
@@ -517,8 +573,8 @@ export const accounts: Record<string, accountconfig> = {
     name: "development",
     email: "your-email+dev@gmail.com", // replace with your email
     environment: "dev",
-    helloworldmessage: "hello from development! 💻",
-    // 🇸🇬 singapore version: "hello from singapore development! 🇸🇬💻",
+    ctonemessage: "ctone from development! 💻",
+    // 🇸🇬 singapore version: "ctone from singapore development! 🇸🇬💻",
     memorysize: 128, // minimal for cost optimization
     timeout: 10,
   },
@@ -526,8 +582,8 @@ export const accounts: Record<string, accountconfig> = {
     name: "staging",
     email: "your-email+staging@gmail.com", // replace with your email
     environment: "staging",
-    helloworldmessage: "hello from staging! 🧪",
-    // 🇸🇬 singapore version: "hello from singapore staging! 🇸🇬🧪",
+    ctonemessage: "ctone from staging! 🧪",
+    // 🇸🇬 singapore version: "ctone from singapore staging! 🇸🇬🧪",
     memorysize: 256,
     timeout: 15,
   },
@@ -535,8 +591,8 @@ export const accounts: Record<string, accountconfig> = {
     name: "shared-services",
     email: "your-email+shared@gmail.com", // replace with your email
     environment: "shared",
-    helloworldmessage: "hello from shared services! 🔧",
-    // 🇸🇬 singapore version: "hello from singapore shared services! 🇸🇬🔧",
+    ctonemessage: "ctone from shared services! 🔧",
+    // 🇸🇬 singapore version: "ctone from singapore shared services! 🇸🇬🔧",
     memorysize: 256,
     timeout: 15,
   },
@@ -544,8 +600,8 @@ export const accounts: Record<string, accountconfig> = {
     name: "production",
     email: "your-email+prod@gmail.com", // replace with your email
     environment: "prod",
-    helloworldmessage: "hello from production! 🚀",
-    // 🇸🇬 singapore version: "hello from singapore production! 🇸🇬🚀",
+    ctonemessage: "ctone from production! 🚀",
+    // 🇸🇬 singapore version: "ctone from singapore production! 🇸🇬🚀",
     memorysize: 512,
     timeout: 30,
   },
@@ -559,9 +615,11 @@ export const core_accounts = {
 ```
 
 > **💡 Pro Tip**: You can automatically sync emails from your AWS organization using the provided script:
+>
 > ```bash
 > ./scripts/sync-account-emails.sh
 > ```
+>
 > This script fetches the actual emails from your AWS accounts and **automatically updates** the config file. It creates a backup first for safety.
 
 ---
@@ -681,19 +739,25 @@ export const core_accounts = {
 - [ ] **Set up CloudWatch billing alarms:**
 
 **Option A: Automated (Recommended)**
+
 - [ ] **Run the automated billing alert script:**
+
   ```bash
   ./scripts/fix-missing-controltower-config.sh
   ```
+
   This script automatically creates:
+
   - Organization-wide alert with $50 SGD threshold
   - SNS topic for notifications
   - Email subscriptions for cost overruns
 
 **Option B: Manual Setup**
+
 - [ ] **Go to CloudWatch console → Alarms → Billing**
 - [ ] **Click "Create alarm"**
 - [ ] **Create Organization-wide Alert:**
+
   - [ ] **Metric:** Select `EstimatedCharges`
   - [ ] **Currency:** Select `SGD` (Singapore Dollars)
   - [ ] **Statistic:** `Maximum`
@@ -701,13 +765,17 @@ export const core_accounts = {
   - [ ] **Threshold:** `Static` > `Greater than` > `50`
   - [ ] **Alarm name:** `Organization-Monthly-Spend-Alert-$50-SGD`
   - [ ] **Create Per-Account Alerts** (automated):
+
     ```bash
     ./scripts/create-per-account-alerts.sh
     ```
+
     This script automatically creates $10 SGD billing alerts for:
+
     - Development, Staging, Shared Services, Production, Management accounts
     - Separate SNS topics for organized notifications
     - Email subscriptions for all cost overruns
+
 - [ ] **Configure notification actions:**
   - [ ] **SNS topic:** Create new topic `billing-alerts`
   - [ ] **Email subscriptions:** Add your email addresses
@@ -716,13 +784,17 @@ export const core_accounts = {
 #### 5.5.3 Create Budgets
 
 **Option A: Automated (Recommended)**
+
 - [ ] **Run the automated budget creation script:**
+
   ```bash
   ./scripts/create-budgets.sh
   ```
+
   This script automatically creates $10 SGD budgets for all accounts with 50%, 80%, 100% alerts.
 
 **Option B: Manual Setup**
+
 - [ ] **Navigate to AWS Budgets console**
 - [ ] **Click "Create budget"**
 - [ ] **Create Organization Budget:**
@@ -829,10 +901,13 @@ After Control Tower setup completes, you have two options:
 #### 5.9.1 Assessment: What Do You Currently Have?
 
 - [ ] **Run the configuration assessment script:**
+
   ```bash
   ./scripts/fix-missing-controltower-config.sh
   ```
+
   This script will:
+
   - ✅ Check your current Control Tower status
   - ✅ Identify missing HIGH PRIORITY features
   - ✅ Show you exactly what needs to be added
@@ -843,11 +918,13 @@ After Control Tower setup completes, you have two options:
 If your assessment shows these are missing, **add them immediately**:
 
 - [ ] **🚨 Billing Alerts** - Prevent cost surprises
+
   - Organization-wide spending alerts
   - Email notifications when thresholds exceeded
   - **Cost Impact**: Without this, you could get $1000s bills with no warning
 
 - [ ] **💰 Budgets** - Control spending
+
   - Per-account spending limits with alerts
   - 50%, 80%, 100% alert thresholds
   - **Cost Impact**: Helps prevent runaway costs from misconfigured resources
@@ -892,13 +969,13 @@ If you need to add missing features quickly:
 
 #### 5.9.6 Cost Impact of Missing Features
 
-| Missing Feature | Potential Cost Impact | Risk Level |
-|----------------|----------------------|------------|
-| **No Billing Alerts** | Unlimited surprise bills | 🚨 CRITICAL |
-| **No Budgets** | Runaway resource costs | 🚨 CRITICAL |
-| **No Cost Tags** | Can't identify waste | 🔶 HIGH |
-| **No Advanced Guardrails** | Security compliance issues | 🔶 MEDIUM |
-| **No Cost Reports** | Limited cost optimization | 🟡 LOW |
+| Missing Feature            | Potential Cost Impact      | Risk Level  |
+| -------------------------- | -------------------------- | ----------- |
+| **No Billing Alerts**      | Unlimited surprise bills   | 🚨 CRITICAL |
+| **No Budgets**             | Runaway resource costs     | 🚨 CRITICAL |
+| **No Cost Tags**           | Can't identify waste       | 🔶 HIGH     |
+| **No Advanced Guardrails** | Security compliance issues | 🔶 MEDIUM   |
+| **No Cost Reports**        | Limited cost optimization  | 🟡 LOW      |
 
 > **💰 Real Example**: Without billing alerts, a misconfigured Lambda function could cost $500/day. With alerts, you'd know within hours and fix it quickly.
 
@@ -907,10 +984,13 @@ After Control Tower setup completes, you have three options:
 #### Option A: Complete Automated Setup (🎯 **Recommended for Greenfield**)
 
 - [ ] **ONE command does everything:**
+
   ```bash
   ./scripts/setup-complete-environment.sh
   ```
+
   This single script will automatically:
+
   - ✅ Discover all Control Tower account IDs
   - ✅ Set up SSO user assignments
   - ✅ Create SSO profiles (tar-dev, tar-staging, etc.)
@@ -927,16 +1007,19 @@ After Control Tower setup completes, you have three options:
 If you prefer to run steps individually or troubleshoot issues:
 
 - [ ] **Setup SSO only:**
+
   ```bash
   ./scripts/setup-sso-simple.sh your@email.com
   ```
 
 - [ ] **Bootstrap CDK only** (after SSO is working):
+
   ```bash
   ./scripts/bootstrap-accounts.sh
   ```
 
 - [ ] **Validate everything:**
+
   ```bash
   ./scripts/validate-complete-setup.sh
   ```
@@ -946,11 +1029,13 @@ If you prefer to run steps individually or troubleshoot issues:
 If you prefer manual setup or the scripts don't work in your environment:
 
 - [ ] **Create Non-Production and Production OUs:**
+
   - AWS Organizations console → Organizational units
   - Create OU: `Non-Production` (parent: Root)
   - Create OU: `Production` (parent: Root)
 
 - [ ] **Use Account Factory to create workload accounts:**
+
   - Control Tower console → Account Factory → "Create account"
   - [ ] **Development Account:**
     - Email: `your-email+dev@gmail.com`
@@ -976,29 +1061,33 @@ If you prefer manual setup or the scripts don't work in your environment:
 For **new projects**, automate the entire user creation and permission assignment process:
 
 - [ ] **Use the UserManagement CDK construct** in your main stack:
+
   ```typescript
-  import { UserManagement } from './lib/constructs/user-management';
+  import { UserManagement } from "./lib/constructs/user-management";
 
   // Add to your main stack
-  new UserManagement(this, 'UserManagement', {
-    identityStoreId: 'd-xxxxxxxxxx', // From IAM Identity Center
-    instanceArn: 'arn:aws:sso:::instance/ssoins-xxxxxxxxx',
-    baseEmail: 'your-email@domain.com', // Creates +dev, +staging, etc.
+  new UserManagement(this, "UserManagement", {
+    identityStoreId: "d-xxxxxxxxxx", // From IAM Identity Center
+    instanceArn: "arn:aws:sso:::instance/ssoins-xxxxxxxxx",
+    baseEmail: "your-email@domain.com", // Creates +dev, +staging, etc.
     accounts: {
       dev: process.env.DEV_ACCOUNT_ID!,
       staging: process.env.STAGING_ACCOUNT_ID!,
       shared: process.env.SHARED_ACCOUNT_ID!,
-      prod: process.env.PROD_ACCOUNT_ID!
+      prod: process.env.PROD_ACCOUNT_ID!,
     },
-    organizationId: 'o-xxxxxxxxxx' // For cross-account access
+    organizationId: "o-xxxxxxxxxx", // For cross-account access
   });
   ```
 
 - [ ] **Run automated SSO profile setup:**
+
   ```bash
   ./scripts/setup-automated-sso.sh
   ```
+
   This script:
+
   - ✅ Detects your existing SSO configuration
   - ✅ Creates profiles for all environments (tar-dev, tar-staging, etc.)
   - ✅ Tests authentication for each profile
@@ -1016,6 +1105,7 @@ For **existing projects** where users are already created manually:
   - [ ] `ReadOnlyAccess` with `ReadOnlyAccess` policy
 - [ ] **Assign users to accounts with correct permission sets**
 - [ ] **Configure CLI access for each environment:**
+
   ```bash
   # Create profiles for each workload account
   aws configure sso --profile tar-dev      # Development account
@@ -1027,6 +1117,7 @@ For **existing projects** where users are already created manually:
 #### SSO Profile Verification
 
 - [ ] **Test all SSO profiles:**
+
   ```bash
   # Test each profile
   aws sts get-caller-identity --profile tar-dev
@@ -1036,6 +1127,7 @@ For **existing projects** where users are already created manually:
   ```
 
 - [ ] **Run automated setup helper** (if you have manual users):
+
   ```bash
   ./scripts/setup-automated-sso.sh
   # Will detect existing SSO config and create missing profiles
@@ -1050,6 +1142,7 @@ If you get "No access" errors when testing profiles, it means users haven't been
 ```bash
 ./scripts/show-manual-steps.sh
 ```
+
 This script displays the exact steps with your specific account IDs and email addresses. Follow the output in your browser.
 
 **Option B: Manual Steps:**
@@ -1057,12 +1150,14 @@ This script displays the exact steps with your specific account IDs and email ad
 1. **Go to [IAM Identity Center Console](<https://console.aws.amazon.com/singlesignon)**>
 
 2. **Create Permission Set (if not exists):**
+
    - Multi-account permissions → Permission sets → **Create permission set**
    - Name: `AdminAccess`
    - Use predefined permission set: `AdministratorAccess`
    - Click **Create**
 
 3. **Assign Users to Accounts:**
+
    - AWS accounts → **Select your Dev account** → **Assign users or groups**
    - Select: `testawsrahardja+dev@gmail.com` → **Next**
    - Select: `AdminAccess` permission set → **Next** → **Submit**
@@ -1074,6 +1169,7 @@ This script displays the exact steps with your specific account IDs and email ad
 4. **Wait for provisioning** (2-3 minutes per assignment)
 
 5. **Test the profiles:**
+
    ```bash
    # Test each profile after assignment
    aws sts get-caller-identity --profile tar-dev
@@ -1089,9 +1185,11 @@ This script displays the exact steps with your specific account IDs and email ad
 **Option C: Full Automation (Advanced):**
 
 For the technically adventurous, try the full automation script:
+
 ```bash
 BASE_EMAIL=testawsrahardja@gmail.com ./scripts/assign-sso-permissions.sh
 ```
+
 ⚠️ This script may have regional/permission issues but automates the entire process if it works.
 
 ---
@@ -1103,7 +1201,11 @@ BASE_EMAIL=testawsrahardja@gmail.com ./scripts/assign-sso-permissions.sh
 - [ ] **Create `lib/lambda/main-handler.ts`** with the following content:
 
 ```typescript
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from "aws-lambda";
 
 interface ResponseMetadata {
   remainingTime: number;
@@ -1126,20 +1228,20 @@ interface ResponseBody {
 
 export const handler = async (
   event: APIGatewayProxyEvent,
-  context: Context
+  context: Context,
 ): Promise<APIGatewayProxyResult> => {
   // Log incoming request for debugging and monitoring
-  console.log('event received:', JSON.stringify(event, null, 2));
+  console.log("event received:", JSON.stringify(event, null, 2));
 
   const responseBody: ResponseBody = {
-    message: process.env.HELLO_WORLD_MESSAGE || 'Hello World!',
-    environment: process.env.ENVIRONMENT || 'unknown',
-    account: process.env.ACCOUNT_NAME || 'unknown',
+    message: process.env.CTONE_MESSAGE || "CTone!",
+    environment: process.env.ENVIRONMENT || "unknown",
+    account: process.env.ACCOUNT_NAME || "unknown",
     timestamp: new Date().toISOString(),
     requestId: context.awsRequestId,
-    region: process.env.AWS_REGION || 'unknown',
-    version: '1.0.0',
-    runtime: 'nodejs22.x',
+    region: process.env.AWS_REGION || "unknown",
+    version: "1.0.0",
+    runtime: "nodejs22.x",
     // 🇸🇬 Singapore addition: add location metadata
     // location: {
     //   country: 'singapore',
@@ -1153,19 +1255,19 @@ export const handler = async (
       remainingTime: context.getRemainingTimeInMillis(),
       memoryLimit: context.memoryLimitInMB,
       architecture: process.arch,
-      nodeVersion: process.version
-    }
+      nodeVersion: process.version,
+    },
   };
 
   const response: APIGatewayProxyResult = {
     statusCode: 200,
     headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
-    body: JSON.stringify(responseBody, null, 2)
+    body: JSON.stringify(responseBody, null, 2),
   };
 
   return response;
@@ -1175,7 +1277,11 @@ export const handler = async (
 - [ ] **Create `lib/lambda/health-handler.ts`** with the following content:
 
 ```typescript
-import { APIGatewayProxyEvent, APIGatewayProxyResult, Context } from 'aws-lambda';
+import {
+  APIGatewayProxyEvent,
+  APIGatewayProxyResult,
+  Context,
+} from "aws-lambda";
 
 interface HealthResponseBody {
   status: string;
@@ -1186,32 +1292,31 @@ interface HealthResponseBody {
 
 export const handler = async (
   event: APIGatewayProxyEvent,
-  context: Context
+  context: Context,
 ): Promise<APIGatewayProxyResult> => {
-
   const responseBody: HealthResponseBody = {
-    status: 'healthy',
-    environment: process.env.ENVIRONMENT || 'unknown',
+    status: "healthy",
+    environment: process.env.ENVIRONMENT || "unknown",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime()
+    uptime: process.uptime(),
   };
 
   const response: APIGatewayProxyResult = {
     statusCode: 200,
     headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*'
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
     },
-    body: JSON.stringify(responseBody)
+    body: JSON.stringify(responseBody),
   };
 
   return response;
 };
 ```
 
-### 6.2 Hello World Application Construct
+### 6.2 CTone Application Construct
 
-- [ ] **Create `lib/constructs/hello-world-app.ts`** with the following content:
+- [ ] **Create `lib/constructs/ctone-app.ts`** with the following content:
 
 ```typescript
 import { Construct } from "constructs";
@@ -1227,22 +1332,22 @@ import {
 } from "aws-cdk-lib";
 import { accountconfig } from "../config/accounts";
 
-export interface helloworldappprops {
+export interface ctoneappprops {
   accountconfig: accountconfig;
 }
 
-export class helloworldapp extends Construct {
+export class ctoneapp extends Construct {
   public readonly api: apigatewayv2.HttpApi;
   public readonly lambda: lambda.IFunction;
 
-  constructor(scope: Construct, id: string, props: helloworldappprops) {
+  constructor(scope: Construct, id: string, props: ctoneappprops) {
     super(scope, id);
 
     const { accountconfig } = props;
 
     // create log group with cost-optimized retention
-    const loggroup = new logs.LogGroup(this, "helloworldloggroup", {
-      logGroupName: `/aws/lambda/hello-world-${accountconfig.environment}`,
+    const loggroup = new logs.LogGroup(this, "ctoneloggroup", {
+      logGroupName: `/aws/lambda/ctone-${accountconfig.environment}`,
       retention:
         accountconfig.environment === "prod"
           ? logs.RetentionDays.ONE_MONTH
@@ -1251,31 +1356,31 @@ export class helloworldapp extends Construct {
     });
 
     // create TypeScript lambda function with automatic compilation
-    this.lambda = new nodejs.NodejsFunction(this, "helloworldfunction", {
+    this.lambda = new nodejs.NodejsFunction(this, "ctonefunction", {
       runtime: lambda.Runtime.NODEJS_22_X,
-      entry: "lib/lambda/main-handler.ts",   // TypeScript source file
-      handler: "handler",                    // Export name from TypeScript file
+      entry: "lib/lambda/main-handler.ts", // TypeScript source file
+      handler: "handler", // Export name from TypeScript file
       environment: {
         ENVIRONMENT: accountconfig.environment,
         ACCOUNT_NAME: accountconfig.name,
-        HELLO_WORLD_MESSAGE: accountconfig.helloworldmessage,
+        CTONE_MESSAGE: accountconfig.ctonemessage,
       },
-      description: `Hello World Lambda for ${accountconfig.name} environment`,
+      description: `CTone Lambda for ${accountconfig.name} environment`,
       timeout: Duration.seconds(accountconfig.timeout),
       memorySize: accountconfig.memorysize,
       logGroup: loggroup,
       architecture: lambda.Architecture.ARM_64, // cost optimization with graviton
       bundling: {
-        minify: true,                          // Minify TypeScript output
-        sourceMap: false,                      // Disable source maps for production
-        target: "es2022",                      // Target modern JavaScript
+        minify: true, // Minify TypeScript output
+        sourceMap: false, // Disable source maps for production
+        target: "es2022", // Target modern JavaScript
       },
     });
 
     // create http api (cost-optimized vs rest api)
-    this.api = new apigatewayv2.HttpApi(this, "helloworldapi", {
-      apiName: `Hello World API - ${accountconfig.environment}`,
-      description: `Hello World HTTP API for ${accountconfig.name} environment`,
+    this.api = new apigatewayv2.HttpApi(this, "ctoneapi", {
+      apiName: `CTone API - ${accountconfig.environment}`,
+      description: `CTone HTTP API for ${accountconfig.name} environment`,
       corsPreflight: {
         allowOrigins: ["*"],
         allowMethods: [
@@ -1300,8 +1405,8 @@ export class helloworldapp extends Construct {
     // simple health check endpoint with TypeScript
     const healthlambda = new nodejs.NodejsFunction(this, "healthfunction", {
       runtime: lambda.Runtime.NODEJS_22_X,
-      entry: "lib/lambda/health-handler.ts",  // TypeScript source file
-      handler: "handler",                     // Export name from TypeScript file
+      entry: "lib/lambda/health-handler.ts", // TypeScript source file
+      handler: "handler", // Export name from TypeScript file
       environment: {
         ENVIRONMENT: accountconfig.environment,
       },
@@ -1309,9 +1414,9 @@ export class helloworldapp extends Construct {
       memorySize: 128, // minimal for health check
       architecture: lambda.Architecture.ARM_64,
       bundling: {
-        minify: true,                          // Minify TypeScript output
-        sourceMap: false,                      // Disable source maps for production
-        target: "es2022",                      // Target modern JavaScript
+        minify: true, // Minify TypeScript output
+        sourceMap: false, // Disable source maps for production
+        target: "es2022", // Target modern JavaScript
       },
     });
 
@@ -1327,8 +1432,8 @@ export class helloworldapp extends Construct {
     // outputs
     new CfnOutput(this, "apiurl", {
       value: this.api.apiEndpoint,
-      description: `Hello World API URL for ${accountconfig.environment}`,
-      exportName: `helloworldapiurl-${accountconfig.environment}`,
+      description: `CTone API URL for ${accountconfig.environment}`,
+      exportName: `ctoneapiurl-${accountconfig.environment}`,
     });
 
     new CfnOutput(this, "healthcheckurl", {
@@ -1346,7 +1451,7 @@ export class helloworldapp extends Construct {
 ```typescript
 import { Stack, StackProps, Tags } from "aws-cdk-lib";
 import { Construct } from "constructs";
-import { helloworldapp } from "../constructs/hello-world-app";
+import { ctoneapp } from "../constructs/ctone-app";
 import { accountconfig } from "../config/accounts";
 
 export interface applicationstackprops extends StackProps {
@@ -1359,8 +1464,8 @@ export class applicationstack extends Stack {
 
     const { accountconfig } = props;
 
-    // create hello world application
-    new helloworldapp(this, "helloworldapp", {
+    // create ctone application
+    new ctoneapp(this, "ctoneapp", {
       accountconfig,
     });
 
@@ -1389,7 +1494,7 @@ const app = new cdk.App();
 
 // deploy application stacks for each environment
 Object.entries(accounts).forEach(([key, accountconfig]) => {
-  new applicationstack(app, `helloworld-${key}`, {
+  new applicationstack(app, `ctone-${key}`, {
     accountconfig: accountconfig,
     env: {
       account:
@@ -1398,9 +1503,9 @@ Object.entries(accounts).forEach(([key, accountconfig]) => {
       region: process.env.CDK_DEFAULT_REGION || "us-east-1",
       // 🇸🇬 singapore: change to "ap-southeast-1"
     },
-    description: `hello world application for ${accountconfig.name} environment`,
+    description: `ctone application for ${accountconfig.name} environment`,
     // 🇸🇬 singapore: add "(singapore)" to description
-    stackName: `helloworld-${key}`,
+    stackName: `ctone-${key}`,
   });
 });
 
@@ -1420,31 +1525,37 @@ cdk.Tags.of(app).add("project", "simplecontroltower");
 This template now uses **TypeScript Lambda functions** with the following advantages:
 
 ### ✅ **Type Safety & Development Experience**
+
 - **Compile-time error checking** prevents runtime errors
 - **IntelliSense support** with autocomplete and documentation
 - **Refactoring safety** with IDE support for renaming and finding references
 - **Interface definitions** for request/response structures
 
 ### ✅ **Automatic Build & Optimization**
+
 - **NodejsFunction** automatically compiles TypeScript to JavaScript
 - **esbuild integration** for fast compilation and minification
 - **Tree shaking** removes unused code for smaller bundles
 - **Modern JavaScript targets** (ES2022) for better performance
 
 ### ✅ **External File Organization**
+
 - **Separate .ts files** instead of inline code for better maintainability
 - **Proper IDE support** with syntax highlighting and debugging
 - **Version control friendly** with clean file structure
 - **Easier testing** with external TypeScript files
 
 ### ✅ **Bundle Optimization**
+
 - **Minified output** for reduced Lambda cold start times
 - **No source maps** in production for smaller bundles
 - **ARM64 optimization** combined with TypeScript compilation
 - **Modern JavaScript** targeting for better performance
 
 ### 🔄 **Migration from JavaScript**
+
 If you previously used inline JavaScript:
+
 - Replace `lambda.Code.fromInline()` with TypeScript files
 - Change `lambda.Function` to `nodejs.NodejsFunction`
 - Add proper TypeScript types for better development experience
@@ -1579,7 +1690,7 @@ echo "✅ all accounts bootstrapped successfully!"
 # load environment variables
 source .env
 
-echo "🚀 deploying hello world applications"
+echo "🚀 deploying ctone applications"
 echo "===================================="
 # 🇸🇬 singapore: update title to include "(singapore)"
 
@@ -1587,7 +1698,7 @@ echo "===================================="
 deploy_to_account() {
 local env_name="$1"
 local account_id="$2"
-local stack_name="helloworld-$env_name"
+local stack_name="ctone-$env_name"
 
 echo "📦 deploying $stack_name to account $account_id..."
 # 🇸🇬 singapore: add "in singapore" to deployment message
@@ -1608,7 +1719,7 @@ echo "🌐 api url: $api_url"
 # test the endpoint
 echo "🧪 testing endpoint..."
 response=$(curl -s "$api_url" 2>/dev/null)
-if echo "$response" | grep -q "hello"; then
+if echo "$response" | grep -q "ctone"; then
 echo "✅ endpoint test successful"
 else
 echo "⚠️  endpoint test failed"
@@ -1632,7 +1743,7 @@ echo ""
 echo "🔗 access your applications:"
 for env in dev staging shared prod; do
 if [ -f "outputs-$env.json" ]; then
-url=$(cat "outputs-$env.json" | jq -r ".\"helloworld-$env\".apiurl" 2>/dev/null)
+url=$(cat "outputs-$env.json" | jq -r ".\"ctone-$env\".apiurl" 2>/dev/null)
 echo "├── $env: $url"
 fi
 done
@@ -1678,7 +1789,7 @@ echo "🧪 testing $env environment..."
 # get api url
 api_url=""
 if [ -f "outputs-$env.json" ]; then
-api_url=$(cat "outputs-$env.json" | jq -r ".\"helloworld-$env\".apiurl" 2>/dev/null)
+api_url=$(cat "outputs-$env.json" | jq -r ".\"ctone-$env\".apiurl" 2>/dev/null)
 fi
 
 if [ ! -z "$api_url" ] && [ "$api_url" != "null" ]; then
@@ -1686,7 +1797,7 @@ echo "🌐 api url: $api_url"
 
 # test main endpoint
 response=$(curl -s --max-time 10 "$api_url" 2>/dev/null)
-if echo "$response" | grep -q "hello"; then
+if echo "$response" | grep -q "ctone"; then
 echo "✅ main endpoint working"
 
 # extract environment from response
@@ -1709,7 +1820,7 @@ else
 echo "⚠️  health endpoint test failed"
 fi
 else
-echo "❌ stack not found or not deployed: helloworld-$env"
+echo "❌ stack not found or not deployed: ctone-$env"
 fi
 done
 
@@ -1719,7 +1830,7 @@ echo "===================="
 echo "✅ validation completed at $(date)"
 echo ""
 echo "🚀 next steps:"
-echo "1. access your hello world applications using the urls above"
+echo "1. access your ctone applications using the urls above"
 echo "2. monitor costs in aws cost explorer"
 echo "3. set up ci/cd pipeline: dev → staging → prod"
 echo "4. add your custom applications to each environment"
@@ -1832,10 +1943,10 @@ echo "├── 🧪 staging: pre-production testing"
 echo "├── 🔧 shared services: shared resources"
 echo "└── 🚀 production: full resources"
 echo ""
-echo "🔗 your hello world applications:"
+echo "🔗 your ctone applications:"
 for env in dev staging shared prod; do
 if [ -f "outputs-$env.json" ]; then
-url=$(cat "outputs-$env.json" | jq -r ".\"helloworld-$env\".apiurl" 2>/dev/null)
+url=$(cat "outputs-$env.json" | jq -r ".\"ctone-$env\".apiurl" 2>/dev/null)
 echo "├── $env: $url"
 fi
 done
@@ -1860,10 +1971,10 @@ done
     "diff": "cdk diff",
     "validate": "npm run build && npm run test && cdk synth",
     "bootstrap": "cdk bootstrap",
-    "deploy:dev": "cdk deploy helloworld-dev --require-approval never",
-    "deploy:staging": "cdk deploy helloworld-staging --require-approval never",
-    "deploy:prod": "cdk deploy helloworld-prod --require-approval never",
-    "deploy:shared": "cdk deploy helloworld-shared --require-approval never",
+    "deploy:dev": "cdk deploy ctone-dev --require-approval never",
+    "deploy:staging": "cdk deploy ctone-staging --require-approval never",
+    "deploy:prod": "cdk deploy ctone-prod --require-approval never",
+    "deploy:shared": "cdk deploy ctone-shared --require-approval never",
     "deploy:all": "npm run deploy:dev && npm run deploy:staging && npm run deploy:shared && npm run deploy:prod",
     "test:endpoints": "./scripts/validate-deployment.sh",
     "setup:complete": "./scripts/complete-setup.sh"
@@ -1880,6 +1991,7 @@ done
 ### 8.1 Make Scripts Executable
 
 - [ ] **Make all scripts executable**
+
   ```bash
   chmod +x scripts/*.sh
   ```
@@ -1887,6 +1999,7 @@ done
 ### 8.2 Critical: Check for Missing Configuration
 
 - [ ] **🚨 FIRST: Check if you're missing critical cost controls**
+
   ```bash
   ./scripts/fix-missing-controltower-config.sh
   ```
@@ -1896,6 +2009,7 @@ done
 ### 8.3 Update Email Configuration
 
 - [ ] **Get account IDs and automatically update configuration**
+
   ```bash
   ./scripts/get-account-ids.sh
   ./scripts/sync-account-emails.sh
@@ -1906,28 +2020,33 @@ done
 ### 8.4 CDK Bootstrap and Deploy
 
 - [ ] **Bootstrap CDK in management account**
+
   ```bash
   cdk bootstrap
   ```
 
 - [ ] **Bootstrap all workload accounts**
+
   ```bash
   source .env
   ./scripts/bootstrap-accounts.sh
   ```
 
 - [ ] **Build and synthesize CDK**
+
   ```bash
   npm run build
   cdk synth
   ```
 
 - [ ] **Deploy applications to all environments**
+
   ```bash
   ./scripts/deploy-applications.sh
   ```
 
 - [ ] **Validate deployment**
+
   ```bash
   ./scripts/validate-deployment.sh
   ```
@@ -1935,6 +2054,7 @@ done
 ### 8.5 Alternative: Complete Automated Setup
 
 - [ ] **Run complete setup script** (after Control Tower manual setup)
+
   ```bash
   npm run setup:complete
   ```
@@ -1944,6 +2064,7 @@ done
 ### 8.6 Individual Environment Commands
 
 - [ ] **Deploy to specific environments** (optional)
+
   ```bash
   npm run deploy:dev
   npm run deploy:staging
@@ -1952,6 +2073,7 @@ done
   ```
 
 - [ ] **Test all endpoints**
+
   ```bash
   npm run test:endpoints
   ```
@@ -1959,6 +2081,7 @@ done
 ### 8.7 Greenfield Setup Verification
 
 **🎯 Best Practice: Single Verification Command**
+
 ```bash
 # Complete setup verification (automated)
 AWS_PROFILE=your-profile ./scripts/verify-complete-setup.sh
@@ -1971,18 +2094,21 @@ AWS_PROFILE=your-profile ./scripts/verify-complete-setup.sh
 ### **📋 Manual Verification Checklist (If Needed)**
 
 **🚨 CRITICAL: Cost Protection**
+
 - [ ] **6 CloudWatch alarms** with SGD thresholds
 - [ ] **6 AWS budgets** with USD amounts
 - [ ] **Email confirmations** clicked in your inbox
 - [ ] **SNS subscriptions** all confirmed (not pending)
 
 **📋 System Setup**
+
 - [ ] **5+ AWS accounts** provisioned (Dev, Staging, Shared, Prod + core accounts)
 - [ ] **Applications deployed** to all environments
 - [ ] **API endpoints** responding correctly
 - [ ] **Cost protection active** and monitoring
 
 **🔍 Quick Manual Verification Commands**
+
 ```bash
 # Verify cost protection (should show 6 alarms)
 AWS_PROFILE=your-profile aws cloudwatch describe-alarms --query 'MetricAlarms[?MetricName==`EstimatedCharges`] | length(@)'
@@ -1995,6 +2121,7 @@ AWS_PROFILE=your-profile ./scripts/test-all-endpoints.sh
 ```
 
 ### **✅ Success Criteria**
+
 - **6 billing alarms** monitoring all accounts
 - **6 budgets** with appropriate thresholds
 - **All email subscriptions confirmed**
@@ -2032,6 +2159,7 @@ npm install aws-cdk-lib@latest constructs@latest
 **After Control Tower setup completes:**
 
 #### **Complete Environment Setup (Recommended)**
+
 ```bash
 # ONE command does everything:
 ./scripts/setup-complete-environment.sh
@@ -2045,6 +2173,7 @@ npm install aws-cdk-lib@latest constructs@latest
 ```
 
 #### **Alternative: Individual Steps**
+
 ```bash
 # If you prefer granular control:
 ./scripts/get-account-ids.sh                    # Discover accounts
@@ -2054,6 +2183,7 @@ npm install aws-cdk-lib@latest constructs@latest
 ```
 
 #### **Validation and Testing**
+
 ```bash
 # Test all SSO profiles work:
 aws sts get-caller-identity --profile tar-dev
@@ -2066,6 +2196,7 @@ aws sts get-caller-identity --profile tar-prod
 ```
 
 #### **Application Deployment**
+
 ```bash
 # After environment setup is complete:
 ./scripts/deploy-applications.sh
@@ -2075,7 +2206,7 @@ npm run build
 cdk deploy --all
 
 # Deploy to specific environment:
-AWS_PROFILE=tar-dev cdk deploy helloworld-dev
+AWS_PROFILE=tar-dev cdk deploy ctone-dev
 ```
 
 **Total Time: ~15 minutes (including AWS provisioning time)**
@@ -2083,6 +2214,7 @@ AWS_PROFILE=tar-dev cdk deploy helloworld-dev
 #### **💰 Smart Cost Management**
 
 **Destroy applications to save money (preserves foundation):**
+
 ```bash
 # Save ~$36-120/month, keep foundation ready
 ./scripts/destroy-applications.sh
@@ -2092,6 +2224,7 @@ cdk deploy --all
 ```
 
 **Complete infrastructure destruction:**
+
 ```bash
 # Nuclear option - destroys everything
 ./scripts/destroy-everything.sh
@@ -2101,18 +2234,20 @@ cdk deploy --all
 ```
 
 **Perfect development workflow:**
+
 ```bash
 # Start work day
-AWS_PROFILE=tar-dev cdk deploy helloworld-dev
+AWS_PROFILE=tar-dev cdk deploy ctone-dev
 
 # End work day (save money)
 ./scripts/destroy-applications.sh
 
 # Resume next day (2 minutes)
-AWS_PROFILE=tar-dev cdk deploy helloworld-dev
+AWS_PROFILE=tar-dev cdk deploy ctone-dev
 ```
 
 **Cost breakdown:**
+
 - **Active development**: $35-70/month
 - **Savings mode**: $0.10/month (99% reduction)
 - **Foundation preserved**: SSO profiles, CDK bootstrap, accounts
@@ -2120,12 +2255,14 @@ AWS_PROFILE=tar-dev cdk deploy helloworld-dev
 #### **🔧 Common Issues & Solutions**
 
 **CDK Version Mismatch Error:**
+
 ```bash
 # Error: "CLI versions and CDK library versions have diverged"
 npm install -g aws-cdk@latest
 ```
 
 **Applications Not Deployed:**
+
 ```bash
 # Check if stacks exist
 AWS_PROFILE=your-profile cdk list
@@ -2138,6 +2275,7 @@ AWS_PROFILE=your-profile ./scripts/deploy-applications.sh
 ```
 
 **Permission Errors:**
+
 ```bash
 # Make sure you're using SSO profile, not root
 aws sts get-caller-identity
@@ -2154,18 +2292,21 @@ aws sso login --profile your-profile
 **If you need granular control or troubleshooting:**
 
 **🚨 Step 1: Cost Protection (CRITICAL - Must be First)**
+
 ```bash
 # Complete cost protection setup
 ALERT_EMAIL=your@email.com AWS_PROFILE=your-profile ./scripts/setup-cost-protection.sh
 ```
 
 **📋 Step 2: Account Setup & Deployment**
+
 ```bash
 # Account discovery and application deployment
 AWS_PROFILE=your-profile ./scripts/setup-accounts-and-deploy.sh
 ```
 
 **🔍 Step 3: Validation**
+
 ```bash
 # Verify everything is working
 AWS_PROFILE=your-profile ./scripts/validate-complete-setup.sh
@@ -2197,6 +2338,7 @@ AWS_PROFILE=your-profile ./scripts/bootstrap-accounts.sh
 AWS_PROFILE=your-profile ./scripts/deploy-applications.sh
 AWS_PROFILE=your-profile ./scripts/validate-deployment.sh
 ```
+
 </details>
 
 > **⚠️ Important**: Always use the single command approach unless you need to debug specific issues. Individual commands are provided for troubleshooting only.
@@ -2303,7 +2445,7 @@ to use this template in singapore, simply:
 1. **set region**: `aws configure set region ap-southeast-1`
 2. **update cdk app**: change region to `ap-southeast-1` in `bin/simple-control-tower-cdk.ts`
 3. **control tower setup**: select singapore as home region in console
-4. **optional**: add singapore flags to hello world messages and location metadata
+4. **optional**: add singapore flags to ctone messages and location metadata
 
 all cost optimizations and architectural benefits remain the same!
 
@@ -2317,4 +2459,3 @@ all cost optimizations and architectural benefits remain the same!
 - access keys: only on iam user, never on root account
 
 this approach provides the same functionality with enterprise-grade security! 🚀
-

@@ -586,7 +586,7 @@ deploy_applications() {
         sleep 10  # Wait for API Gateway to be fully ready
         
         local profiles=("tar-dev" "tar-staging" "tar-shared" "tar-prod")
-        local stack_names=("helloworld-dev" "helloworld-staging" "helloworld-shared" "helloworld-prod")
+        local stack_names=("ctone-dev" "ctone-staging" "ctone-shared" "ctone-prod")
         
         for i in "${!profiles[@]}"; do
             profile="${profiles[$i]}"
@@ -595,7 +595,7 @@ deploy_applications() {
             # Get API URL from CloudFormation output
             API_URL=$(AWS_PROFILE="$profile" aws cloudformation describe-stacks \
                 --stack-name "$stack_name" \
-                --query 'Stacks[0].Outputs[?OutputKey==`helloworldapiurl`].OutputValue' \
+                --query 'Stacks[0].Outputs[?OutputKey==`ctoneapiurl`].OutputValue' \
                 --output text 2>/dev/null || echo "")
             
             if [ -n "$API_URL" ]; then
@@ -639,7 +639,7 @@ echo "   • Check validation: ./scripts/validate-complete-setup.sh"
 echo "   • Save costs: ./scripts/down.sh"
 echo ""
 echo -e "${YELLOW}💡 Useful Commands:${NC}"
-echo "   • Deploy specific env: AWS_PROFILE=tar-dev cdk deploy helloworld-dev"
+echo "   • Deploy specific env: AWS_PROFILE=tar-dev cdk deploy ctone-dev"
 echo "   • Check costs: aws ce get-cost-and-usage --time-period Start=2024-01-01,End=2024-12-31 --granularity MONTHLY --metrics BlendedCost"
 echo "   • SSO login: aws sso login --profile tar-dev"
 echo ""

@@ -27,7 +27,7 @@
  * - name: Human-readable account name for identification and tagging
  * - email: Email address used for AWS account creation in Control Tower
  * - environment: Environment type that determines deployment behavior
- * - helloworldmessage: Custom message returned by the Lambda function
+ * - ctonemessage: Custom message returned by the Lambda function
  * - memorysize: Lambda memory allocation in MB (cost optimization)
  * - timeout: Lambda timeout in seconds (performance vs cost balance)
  */
@@ -35,7 +35,7 @@ export interface accountconfig {
   name: string;
   email: string;
   environment: "prod" | "staging" | "dev" | "shared";
-  helloworldmessage: string;
+  ctonemessage: string;
   memorysize: number;
   timeout: number;
 }
@@ -76,7 +76,7 @@ export const accounts: Record<string, accountconfig> = {
     name: "development",
     email: "testawsrahardja+dev@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "dev",
-    helloworldmessage: "hello from development! 💻",
+    ctonemessage: "hello from development! 💻",
     // 🇸🇬 singapore version: "hello from singapore development! 🇸🇬💻",
     memorysize: 128, // minimal for cost optimization
     timeout: 10,
@@ -98,7 +98,7 @@ export const accounts: Record<string, accountconfig> = {
     name: "staging",
     email: "testawsrahardja+staging@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "staging",
-    helloworldmessage: "hello from staging! 🧪",
+    ctonemessage: "hello from staging! 🧪",
     // 🇸🇬 singapore version: "hello from singapore staging! 🇸🇬🧪",
     memorysize: 256,
     timeout: 15,
@@ -120,7 +120,7 @@ export const accounts: Record<string, accountconfig> = {
     name: "shared-services",
     email: "testawsrahardja+shared@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "shared",
-    helloworldmessage: "hello from shared services! 🔧",
+    ctonemessage: "hello from shared services! 🔧",
     // 🇸🇬 singapore version: "hello from singapore shared services! 🇸🇬🔧",
     memorysize: 256,
     timeout: 15,
@@ -142,7 +142,7 @@ export const accounts: Record<string, accountconfig> = {
     name: "production",
     email: "testawsrahardja+prod@gmail.com", // update with ./scripts/sync-account-emails.sh
     environment: "prod",
-    helloworldmessage: "hello from production! 🚀",
+    ctonemessage: "hello from production! 🚀",
     // 🇸🇬 singapore version: "hello from singapore production! 🇸🇬🚀",
     memorysize: 512,
     timeout: 30,

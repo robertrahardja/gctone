@@ -29,11 +29,11 @@ with:
 
 ## ⏱️ Time Investment
 
-| Phase | Duration | Type | What Happens |
-|-------|----------|------|--------------|
-| **Manual Prerequisites** | 60-90 min | Manual | AWS setup, tools, CT |
-| **Automated Setup** | 15 min | Automated | Discovery, SSO, CDK, deployment |
-| **TOTAL** | **90 min** | **Mixed** | **Complete production environment** |
+| Phase                    | Duration   | Type      | What Happens                        |
+| ------------------------ | ---------- | --------- | ----------------------------------- |
+| **Manual Prerequisites** | 60-90 min  | Manual    | AWS setup, tools, CT                |
+| **Automated Setup**      | 15 min     | Automated | Discovery, SSO, CDK, deployment     |
+| **TOTAL**                | **90 min** | **Mixed** | **Complete production environment** |
 
 **Monthly Cost:** $35-70 USD (or $0.10 with smart cost management)
 
@@ -211,13 +211,13 @@ $ curl <https://your-dev-api.execute-api.ap-southeast-1.amazonaws.com>
 
 ### **Common Issues & Solutions**
 
-| Issue | Solution |
-|-------|----------|
-| **"Control Tower not available"** | Check region support |
-| **"CDK bootstrap failed"** | Verify SSO profiles work |
-| **"Account creation stuck"** | Wait 60 min, check AWS Health Dashboard |
-| **"SSO login not working"** | Run `aws sso login --profile tar-dev` |
-| **"Applications deployment failed"** | Check: `./scripts/down.sh` option 4 |
+| Issue                                | Solution                                |
+| ------------------------------------ | --------------------------------------- |
+| **"Control Tower not available"**    | Check region support                    |
+| **"CDK bootstrap failed"**           | Verify SSO profiles work                |
+| **"Account creation stuck"**         | Wait 60 min, check AWS Health Dashboard |
+| **"SSO login not working"**          | Run `aws sso login --profile tar-dev`   |
+| **"Applications deployment failed"** | Check: `./scripts/down.sh` option 4     |
 
 ### **Support Resources**
 
@@ -244,7 +244,7 @@ cdk synth
 
 ```bash
 # Deploy changes to specific environment
-AWS_PROFILE=tar-dev cdk deploy helloworld-dev
+AWS_PROFILE=tar-dev cdk deploy ctone-dev
 
 # Deploy to all environments
 cdk deploy --all
@@ -279,7 +279,6 @@ cdk deploy --all
 
 ### **🚀 Maximum Automation**
 
-- **18+ scripts** consolidated into **2 commands**
 - **95% automation** (only AWS legal/security steps are manual)
 - **Built-in validation** with 20 comprehensive checks
 
@@ -323,5 +322,3 @@ cdk deploy --all
 # Complete the manual prerequisites, then:
 ./scripts/up.sh
 ```
-
-**You're 90 minutes away from a production-ready AWS foundation!** 🚀

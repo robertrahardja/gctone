@@ -36,7 +36,7 @@ export const handler = async (
   // Construct response body with proper typing
   const responseBody: ResponseBody = {
     // Environment identification
-    message: process.env.HELLO_WORLD_MESSAGE || 'Hello World!',        // Custom environment message from env var
+    message: process.env.CTONE_MESSAGE || 'CTone!',        // Custom environment message from env var
     environment: process.env.ENVIRONMENT || 'unknown',                 // Environment type (dev/staging/prod)
     account: process.env.ACCOUNT_NAME || 'unknown',                    // Account name for identification
     
@@ -81,4 +81,4 @@ export const handler = async (
   };
   
   return response;
-};
+};// CI/CD pipeline test - Sun Jun 29 15:31:27 +08 2025

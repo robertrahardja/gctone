@@ -4,7 +4,7 @@
 
 // example test. To run these tests, uncomment this file along with the
 // example resource in lib/gctone-stack.ts
-test('SQS Queue Created', () => {
+test('CTone Stack Created', () => {
 //   const app = new cdk.App();
 //     // WHEN
 //   const stack = new Gctone.GctoneStack(app, 'MyTestStack');

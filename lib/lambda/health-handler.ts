@@ -15,8 +15,8 @@ interface HealthResponseBody {
 }
 
 export const handler = async (
-  event: APIGatewayProxyEvent,
-  context: Context
+  _event: APIGatewayProxyEvent,
+  _context: Context
 ): Promise<APIGatewayProxyResult> => {
   
   const responseBody: HealthResponseBody = {

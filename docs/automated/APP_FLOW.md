@@ -1,7 +1,7 @@
 # Application Flow Documentation
 
 This document provides a comprehensive visual representation of how the
-Hello World serverless application works, from initial setup through AWS
+CTone serverless application works, from initial setup through AWS
 Control Tower to user interactions, including script automation and TypeScript
 stack construction.
 
@@ -30,10 +30,10 @@ graph TB
     Validation --> Ready["✅ Environment Ready<br/>~10 minutes total"]
     Ready --> Deploy["🚀 Deploy Applications<br/>deploy-applications.sh"]
 
-    Deploy --> DevDeploy["🔧 Deploy to Dev<br/>helloworld-dev"]
-    Deploy --> StagingDeploy["🧪 Deploy to Staging<br/>helloworld-staging"]
-    Deploy --> SharedDeploy["🔧 Deploy to Shared<br/>helloworld-shared"]
-    Deploy --> ProdDeploy["🚀 Deploy to Prod<br/>helloworld-prod"]
+    Deploy --> DevDeploy["🔧 Deploy to Dev<br/>ctone-dev"]
+    Deploy --> StagingDeploy["🧪 Deploy to Staging<br/>ctone-staging"]
+    Deploy --> SharedDeploy["🔧 Deploy to Shared<br/>ctone-shared"]
+    Deploy --> ProdDeploy["🚀 Deploy to Prod<br/>ctone-prod"]
 
     DevDeploy --> DevTest["🧪 Test Dev Endpoint"]
     StagingDeploy --> StagingTest["🧪 Test Staging Endpoint"]
@@ -106,10 +106,10 @@ graph LR
     Shared --> SharedAccount["🏢 AWS Account<br/>SHARED_ACCOUNT_ID"]
     Prod --> ProdAccount["🏢 AWS Account<br/>PROD_ACCOUNT_ID"]
 
-    DevAccount --> DevStack["📦 helloworld-dev"]
-    StagingAccount --> StagingStack["📦 helloworld-staging"]
-    SharedAccount --> SharedStack["📦 helloworld-shared"]
-    ProdAccount --> ProdStack["📦 helloworld-prod"]
+    DevAccount --> DevStack["📦 ctone-dev"]
+    StagingAccount --> StagingStack["📦 ctone-staging"]
+    SharedAccount --> SharedStack["📦 ctone-shared"]
+    ProdAccount --> ProdStack["📦 ctone-prod"]
 
     DevStack --> DevResources["⚡ Lambda + API<br/>Cost Optimized"]
     StagingStack --> StagingResources["⚡ Lambda + API<br/>Balanced"]
@@ -175,10 +175,10 @@ graph TB
 
     CompleteSetup --> DeployApps["🚀 deploy-applications.sh"]
     DeployApps --> DeployLoop{"🔄 Deploy to each env"}
-    DeployLoop --> DeployDev["🔧 Deploy Dev<br/>helloworld-dev stack"]
-    DeployLoop --> DeployStaging["🧪 Deploy Staging<br/>helloworld-staging stack"]
-    DeployLoop --> DeployShared["🔧 Deploy Shared<br/>helloworld-shared stack"]
-    DeployLoop --> DeployProd["🚀 Deploy Prod<br/>helloworld-prod stack"]
+    DeployLoop --> DeployDev["🔧 Deploy Dev<br/>ctone-dev stack"]
+    DeployLoop --> DeployStaging["🧪 Deploy Staging<br/>ctone-staging stack"]
+    DeployLoop --> DeployShared["🔧 Deploy Shared<br/>ctone-shared stack"]
+    DeployLoop --> DeployProd["🚀 Deploy Prod<br/>ctone-prod stack"]
 
     DeployDev --> TestDev["🧪 Test Dev Endpoint<br/>curl health check"]
     DeployStaging --> TestStaging["🧪 Test Staging Endpoint<br/>curl health check"]
@@ -369,17 +369,17 @@ graph TB
 
     CreateStack --> AppStackClass["📋 applicationstack class<br/>lib/stacks/application-stack.ts"]
     AppStackClass --> ExtractConfig["📊 Extract accountconfig<br/>from props"]
-    AppStackClass --> CreateConstruct["🏗️ new helloworldapp()<br/>Instantiate construct"]
+    AppStackClass --> CreateConstruct["🏗️ new ctoneapp()<br/>Instantiate construct"]
     AppStackClass --> ApplyStackTags["🏷️ Apply Stack Tags<br/>Environment, ManagedBy, Project"]
 
-    CreateConstruct --> HelloWorldClass["🏗️ helloworldapp class<br/>lib/constructs/hello-world-app.ts"]
+    CreateConstruct --> CToneClass["🏗️ ctoneapp class<br/>lib/constructs/ctone-app.ts"]
 
-    HelloWorldClass --> CreateLogGroup["📊 CloudWatch Log Group<br/>Environment-specific retention"]
-    HelloWorldClass --> CreateMainLambda["⚡ Main Lambda Function<br/>Node.js 22, ARM64, env config"]
-    HelloWorldClass --> CreateAPI["🌐 HTTP API Gateway<br/>CORS enabled, cost-optimized"]
-    HelloWorldClass --> CreateHealthLambda["🏥 Health Check Lambda<br/>Minimal 128MB resources"]
-    HelloWorldClass --> CreateRoutes["🛣️ API Routes<br/>/ and /health endpoints"]
-    HelloWorldClass --> CreateOutputs["📤 CloudFormation Outputs<br/>API and health URLs"]
+    CToneClass --> CreateLogGroup["📊 CloudWatch Log Group<br/>Environment-specific retention"]
+    CToneClass --> CreateMainLambda["⚡ Main Lambda Function<br/>Node.js 22, ARM64, env config"]
+    CToneClass --> CreateAPI["🌐 HTTP API Gateway<br/>CORS enabled, cost-optimized"]
+    CToneClass --> CreateHealthLambda["🏥 Health Check Lambda<br/>Minimal 128MB resources"]
+    CToneClass --> CreateRoutes["🛣️ API Routes<br/>/ and /health endpoints"]
+    CToneClass --> CreateOutputs["📤 CloudFormation Outputs<br/>API and health URLs"]
 
     CreateMainLambda --> LambdaConfig["⚙️ Lambda Configuration<br/>Memory, timeout from accountconfig"]
     CreateMainLambda --> LambdaCode["📝 TypeScript Lambda Code<br/>lib/lambda/main-handler.ts"]
@@ -405,20 +405,20 @@ graph TB
     Entry --> StackLoop{"🔄 For Each Environment"}
     StackLoop --> AppStack["📦 lib/stacks/application-stack.ts<br/>CloudFormation Stack"]
 
-    AppStack --> HelloWorldConstruct["🏗️ lib/constructs/hello-world-app.ts<br/>HelloWorld Construct"]
+    AppStack --> CToneConstruct["🏗️ lib/constructs/ctone-app.ts<br/>CTone Construct"]
 
-    HelloWorldConstruct --> LogGroupRes["📊 CloudWatch Log Group<br/>Environment-specific retention"]
-    HelloWorldConstruct --> LambdaRes["⚡ Main Lambda Function<br/>Node.js 22, ARM64"]
-    HelloWorldConstruct --> APIRes["🌐 HTTP API Gateway<br/>CORS enabled"]
-    HelloWorldConstruct --> HealthRes["🏥 Health Check Lambda<br/>Minimal resources"]
-    HelloWorldConstruct --> RoutesRes["🛣️ API Routes<br/>/ and /health endpoints"]
-    HelloWorldConstruct --> OutputsRes["📤 CloudFormation Outputs<br/>API URLs"]
+    CToneConstruct --> LogGroupRes["📊 CloudWatch Log Group<br/>Environment-specific retention"]
+    CToneConstruct --> LambdaRes["⚡ Main Lambda Function<br/>Node.js 22, ARM64"]
+    CToneConstruct --> APIRes["🌐 HTTP API Gateway<br/>CORS enabled"]
+    CToneConstruct --> HealthRes["🏥 Health Check Lambda<br/>Minimal resources"]
+    CToneConstruct --> RoutesRes["🛣️ API Routes<br/>/ and /health endpoints"]
+    CToneConstruct --> OutputsRes["📤 CloudFormation Outputs<br/>API URLs"]
 
     AppStack --> StackTags["🏷️ Stack Tags<br/>Environment, Project, ManagedBy"]
     Entry --> AppTags["🏷️ App Tags<br/>Global tags for all resources"]
 
     AccountsConfig --> EnvConfig["⚙️ Environment Settings<br/>Memory, Timeout, Messages"]
-    EnvConfig --> HelloWorldConstruct
+    EnvConfig --> CToneConstruct
 ```
 
 ## Cost Optimization Strategy Flow
@@ -486,10 +486,10 @@ graph LR
 - **`accounts` object**: Environment-specific configurations (dev, staging, shared, prod)
 - **`core_accounts` object**: AWS Control Tower account email mappings
 
-#### `hello-world-app.ts` Exports
+#### `ctone-app.ts` Exports
 
-- **`helloworldappprops` interface**: Props for HelloWorld construct
-- **`helloworldapp` class**: CDK construct that creates all AWS resources
+- **`ctoneappprops` interface**: Props for CTone construct
+- **`ctoneapp` class**: CDK construct that creates all AWS resources
 
 #### `application-stack.ts` Exports
 - **`applicationstackprops` interface**: Props for Application stack
@@ -560,11 +560,11 @@ graph LR
 #### 2. Application Stack Construction (lib/stacks/application-stack.ts)
 - **Stack Boundary**: Defines CloudFormation stack boundary for deployment
 - **Props Extraction**: Extracts `accountconfig` from stack properties
-- **Construct Instantiation**: Creates `helloworldapp` construct with configuration
+- **Construct Instantiation**: Creates `ctoneapp` construct with configuration
 - **Stack-Level Tagging**: Applies environment-specific tags (environment, managedby, project)
 - **Configuration Pass-Through**: Forwards account configuration to child constructs
 
-#### 3. HelloWorld Construct Creation (lib/constructs/hello-world-app.ts)
+#### 3. CTone Construct Creation (lib/constructs/ctone-app.ts)
 - **Log Group**: Creates CloudWatch log group with environment-specific retention
 - **Main Lambda**: Creates TypeScript Lambda function with:
   - Node.js 22 runtime on ARM64 architecture
@@ -616,13 +616,13 @@ graph TB
     StackConstructor --> StackInit["⚙️ Initialize CloudFormation Stack"]
 
     AppStackConstructor --> ExtractProps["📊 const { accountconfig } = props"]
-    ExtractProps --> CreateHelloWorld["🏗️ new helloworldapp(this, 'helloworldapp', { accountconfig })"]
+    ExtractProps --> CreateCTone["🏗️ new ctoneapp(this, 'ctoneapp', { accountconfig })"]
 
-    CreateHelloWorld --> HelloWorldConstructor["🔧 helloworldapp.constructor()"]
-    HelloWorldConstructor --> HelloWorldSuper["📞 super(scope, id)"]
-    HelloWorldSuper --> ConstructInit["⚙️ Initialize CDK Construct"]
+    CreateCTone --> CToneConstructor["🔧 ctoneapp.constructor()"]
+    CToneConstructor --> CToneSuper["📞 super(scope, id)"]
+    CToneSuper --> ConstructInit["⚙️ Initialize CDK Construct"]
 
-    HelloWorldConstructor --> ExtractConfig["📊 const { accountconfig } = props"]
+    CToneConstructor --> ExtractConfig["📊 const { accountconfig } = props"]
 
     ExtractConfig --> CreateLogGroup["📊 new logs.LogGroup()"]
     CreateLogGroup --> LogGroupConstructor["🔧 LogGroup.constructor()"]
@@ -643,7 +643,7 @@ graph TB
     BundleOptions --> BundleTarget["🎯 target: es2022"]
     LambdaEnv --> EnvEnvironment["🌍 ENVIRONMENT: accountconfig.environment"]
     LambdaEnv --> EnvAccountName["🌍 ACCOUNT_NAME: accountconfig.name"]
-    LambdaEnv --> EnvMessage["🌍 HELLO_WORLD_MESSAGE: accountconfig.helloworldmessage"]
+    LambdaEnv --> EnvMessage["🌍 CTONE_MESSAGE: accountconfig.ctonemessage"]
 
     ExtractConfig --> CreateAPI["🌐 new apigatewayv2.HttpApi()"]
     CreateAPI --> APIConstructor["🔧 HttpApi.constructor()"]
@@ -686,15 +686,15 @@ graph TB
     CreateAPI --> CreateAPIOutput["📤 new CfnOutput()"]
     CreateAPIOutput --> APIOutputConstructor["🔧 CfnOutput.constructor()"]
     APIOutputConstructor --> APIOutputValue["📍 value: this.api.apiEndpoint"]
-    APIOutputConstructor --> APIOutputDescription["📝 description: 'Hello World API URL'"]
-    APIOutputConstructor --> APIOutputExport["📤 exportName: 'helloworldapiurl-{env}'"]
+    APIOutputConstructor --> APIOutputDescription["📝 description: 'CTone API URL'"]
+    APIOutputConstructor --> APIOutputExport["📤 exportName: 'ctoneapiurl-{env}'"]
 
     CreateHealthLambda --> CreateHealthOutput["📤 new CfnOutput()"]
     CreateHealthOutput --> HealthOutputConstructor["🔧 CfnOutput.constructor()"]
     HealthOutputConstructor --> HealthOutputValue["📍 value: '{api.apiEndpoint}/health'"]
     HealthOutputConstructor --> HealthOutputDescription["📝 description: 'Health check URL'"]
 
-    CreateHelloWorld --> ApplyStackTags["🏷️ Apply Stack Tags"]
+    CreateCTone --> ApplyStackTags["🏷️ Apply Stack Tags"]
     ApplyStackTags --> EnvironmentTag["🏷️ Tags.of(this).add('environment', accountconfig.environment)"]
     ApplyStackTags --> ManagedByTag["🏷️ Tags.of(this).add('managedby', 'cdk')"]
     ApplyStackTags --> ProjectTag["🏷️ Tags.of(this).add('project', 'simplecontroltower')"]
@@ -709,15 +709,15 @@ graph TB
     ApplyGlobalTags --> CDKSynth["🔄 CDK Synthesis Process"]
     CDKSynth --> GenerateTemplates["📄 Generate CloudFormation Templates"]
     GenerateTemplates --> StackTemplates["📄 4 Stack Templates Generated"]
-    StackTemplates --> DevTemplate["📄 helloworld-dev.template.json"]
-    StackTemplates --> StagingTemplate["📄 helloworld-staging.template.json"]
-    StackTemplates --> SharedTemplate["📄 helloworld-shared.template.json"]
-    StackTemplates --> ProdTemplate["📄 helloworld-prod.template.json"]
+    StackTemplates --> DevTemplate["📄 ctone-dev.template.json"]
+    StackTemplates --> StagingTemplate["📄 ctone-staging.template.json"]
+    StackTemplates --> SharedTemplate["📄 ctone-shared.template.json"]
+    StackTemplates --> ProdTemplate["📄 ctone-prod.template.json"]
 
     style Start fill:#e1f5fe
     style CreateApp fill:#f3e5f5
     style CreateAppStack fill:#e8f5e8
-    style CreateHelloWorld fill:#fff3e0
+    style CreateCTone fill:#fff3e0
     style CreateMainLambda fill:#fce4ec
     style CreateAPI fill:#e0f2f1
     style CreateHealthLambda fill:#fff8e1
@@ -730,7 +730,7 @@ graph TB
 sequenceDiagram
     participant App as CDK App
     participant Stack as ApplicationStack
-    participant Construct as HelloWorldApp
+    participant Construct as CToneApp
     participant Lambda as Lambda Function
     participant API as HTTP API Gateway
     participant LogGroup as CloudWatch LogGroup
@@ -747,19 +747,19 @@ sequenceDiagram
         Stack->>Stack: Extract accountconfig from props
 
         Note over Stack,Construct: Construct Creation Phase
-        Stack->>Construct: new helloworldapp(this, 'helloworldapp', { accountconfig })
+        Stack->>Construct: new ctoneapp(this, 'ctoneapp', { accountconfig })
         Construct->>Construct: super(scope, id)
         Construct->>Construct: Extract accountconfig from props
 
         Note over Construct,LogGroup: Resource Creation Phase
-        Construct->>LogGroup: new logs.LogGroup(this, 'helloworldloggroup', config)
+        Construct->>LogGroup: new logs.LogGroup(this, 'ctoneloggroup', config)
         LogGroup-->>Construct: LogGroup instance
 
-        Construct->>Lambda: new nodejs.NodejsFunction(this, 'helloworldfunction', config)
+        Construct->>Lambda: new nodejs.NodejsFunction(this, 'ctonefunction', config)
         Note over Lambda: Configure TypeScript entry, bundling, runtime, memory, timeout
         Lambda-->>Construct: Main TypeScript Lambda instance
 
-        Construct->>API: new apigatewayv2.HttpApi(this, 'helloworldapi', config)
+        Construct->>API: new apigatewayv2.HttpApi(this, 'ctoneapi', config)
         Note over API: Configure CORS, name, description
         API-->>Construct: HTTP API instance
 
@@ -781,7 +781,7 @@ sequenceDiagram
         Construct->>Output: new CfnOutput(this, 'healthcheckurl', { value: healthEndpoint })
         Output-->>Construct: Health URL output
 
-        Construct-->>Stack: HelloWorldApp construct complete
+        Construct-->>Stack: CToneApp construct complete
 
         Note over Stack: Tagging Phase
         Stack->>Stack: Tags.of(this).add('environment', accountconfig.environment)

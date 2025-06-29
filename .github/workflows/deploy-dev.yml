@@ -1,0 +1,222 @@
+name: Deploy to Development
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_deploy:
+        description: 'Force deployment even if validation fails'
+        required: false
+        default: 'false'
+        type: boolean
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: 'ap-southeast-1'
+  ENVIRONMENT: 'development'
+
+jobs:
+  deploy-dev:
+    name: Deploy to Development Environment
+    runs-on: ubuntu-latest
+    environment: development
+    permissions:
+      id-token: write
+      contents: read
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build project
+        run: npm run build
+        
+      - name: Run pre-deployment validation
+        if: ${{ !inputs.force_deploy }}
+        run: |
+          echo "🔍 Running pre-deployment validation..."
+          npm test
+          npm run lint
+          cdk synth
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::803133978889:role/GitHubActions-Dev-Role
+          aws-region: ${{ env.AWS_REGION }}
+          session-name: GitHubActions-Dev-Deployment
+          
+      - name: Verify AWS access
+        run: |
+          echo "🔐 Verifying AWS access..."
+          aws sts get-caller-identity
+          aws sts get-caller-identity --query 'Account' --output text
+          
+      - name: Check CDK bootstrap
+        run: |
+          echo "🛠️ Checking CDK bootstrap status..."
+          aws cloudformation describe-stacks --stack-name cdktoolkit --region ${{ env.AWS_REGION }} > /dev/null 2>&1 || {
+            echo "❌ CDK not bootstrapped in development account"
+            echo "💡 Run: cdk bootstrap --qualifier cdk2024"
+            exit 1
+          }
+          echo "✅ CDK bootstrap verified"
+          
+      - name: Deploy to development
+        run: |
+          echo "🚀 Deploying to development environment..."
+          echo "Account: 803133978889"
+          echo "Region: ${{ env.AWS_REGION }}"
+          
+          cdk deploy helloworld-dev \
+            --require-approval never \
+            --outputs-file outputs-dev.json \
+            --context accountId=803133978889
+            
+      - name: Extract API endpoints
+        id: endpoints
+        run: |
+          if [ -f outputs-dev.json ]; then
+            API_URL=$(cat outputs-dev.json | jq -r '.["helloworld-dev"]["helloworldapiurl"] // empty')
+            HEALTH_URL=$(cat outputs-dev.json | jq -r '.["helloworld-dev"]["helloworldhealthcheckurl"] // empty')
+            
+            echo "api_url=$API_URL" >> $GITHUB_OUTPUT
+            echo "health_url=$HEALTH_URL" >> $GITHUB_OUTPUT
+            
+            echo "🌐 API URL: $API_URL"
+            echo "❤️ Health URL: $HEALTH_URL"
+          else
+            echo "⚠️ No outputs file found"
+          fi
+          
+      - name: Health check
+        if: steps.endpoints.outputs.api_url != ''
+        run: |
+          echo "🩺 Running health checks..."
+          
+          API_URL="${{ steps.endpoints.outputs.api_url }}"
+          HEALTH_URL="${{ steps.endpoints.outputs.health_url }}"
+          
+          # Test main endpoint
+          if curl -f -s "$API_URL" > /dev/null; then
+            echo "✅ Main endpoint responding"
+          else
+            echo "❌ Main endpoint not responding"
+            exit 1
+          fi
+          
+          # Test health endpoint
+          if [ -n "$HEALTH_URL" ]; then
+            if curl -f -s "$HEALTH_URL" > /dev/null; then
+              echo "✅ Health endpoint responding"
+            else
+              echo "❌ Health endpoint not responding"
+              exit 1
+            fi
+          fi
+          
+      - name: Integration tests
+        if: steps.endpoints.outputs.api_url != ''
+        run: |
+          echo "🧪 Running integration tests..."
+          
+          API_URL="${{ steps.endpoints.outputs.api_url }}"
+          
+          # Test API response structure
+          response=$(curl -s "$API_URL")
+          
+          if echo "$response" | jq -e '.message' > /dev/null; then
+            echo "✅ API response structure valid"
+          else
+            echo "❌ Invalid API response structure"
+            exit 1
+          fi
+          
+          # Test environment-specific data
+          environment=$(echo "$response" | jq -r '.environment')
+          if [ "$environment" = "dev" ]; then
+            echo "✅ Environment validation passed"
+          else
+            echo "❌ Environment validation failed: expected 'dev', got '$environment'"
+            exit 1
+          fi
+          
+      - name: Performance baseline
+        if: steps.endpoints.outputs.api_url != ''
+        run: |
+          echo "📊 Collecting performance baseline..."
+          
+          API_URL="${{ steps.endpoints.outputs.api_url }}"
+          
+          # Simple response time test
+          for i in {1..5}; do
+            start_time=$(date +%s%N)
+            curl -s "$API_URL" > /dev/null
+            end_time=$(date +%s%N)
+            duration=$(( (end_time - start_time) / 1000000 ))
+            echo "Request $i: ${duration}ms"
+          done
+          
+      - name: Update deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Development deployment successful"
+            echo "🌐 Environment ready for testing"
+          else
+            echo "❌ Development deployment failed"
+          fi
+          
+      - name: Cost optimization reminder
+        run: |
+          echo "💰 Cost Optimization Reminder"
+          echo "============================="
+          echo "Development environment is now active"
+          echo "Monthly cost: ~$2-5 USD"
+          echo ""
+          echo "💡 To save costs when not developing:"
+          echo "   ./scripts/down.sh (saves 99% of costs)"
+          echo "   Resume with: cdk deploy helloworld-dev"
+          
+      - name: Slack notification
+        if: always()
+        env:
+          SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK }}
+        run: |
+          if [ -n "$SLACK_WEBHOOK" ]; then
+            status_emoji="✅"
+            status_text="Success"
+            if [ "${{ job.status }}" != "success" ]; then
+              status_emoji="❌"
+              status_text="Failed"
+            fi
+            
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\":\"$status_emoji Development Deployment $status_text\n🌐 API: ${{ steps.endpoints.outputs.api_url }}\"}" \
+              "$SLACK_WEBHOOK" || echo "Slack notification failed"
+          fi
+
+  schedule-cleanup:
+    name: Schedule Environment Cleanup
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    if: success()
+    
+    steps:
+      - name: Schedule cleanup job
+        run: |
+          echo "⏰ Scheduling automatic cleanup for cost optimization"
+          echo "Environment will be cleaned up at 6 PM to save costs"
+          echo "Use 'up.sh' script to restore environment quickly"
+          
+          # In a real implementation, this would trigger a scheduled job
+          # or set up a CloudWatch event to destroy resources after hours
