@@ -56,6 +56,13 @@ show_options_menu() {
   echo -e "   ⏱️ Time: ${BLUE}15 minutes${NC}"
   echo -e "   🔄 Resume: ${YELLOW}15 minutes (./scripts/up.sh)${NC}"
   echo ""
+  echo -e "${RED}   ⚠️ DEEP CLEAN IMPLICATIONS:${NC}"
+  echo "   • Removes CDK bootstrap (S3 buckets, IAM roles)"
+  echo "   • Deletes local .env file and SSO profiles"
+  echo "   • Clears CDK context and cache files"
+  echo "   • Requires full rebuild to resume development"
+  echo "   • Perfect for long-term storage (1+ months)"
+  echo ""
   echo -e "${RED}Option 3: Nuclear Option${NC}"
   echo "   🗑️ Destroy: Everything + guidance for account closure"
   echo "   💾 Keep: Nothing (complete cleanup)"
@@ -275,12 +282,37 @@ deep_clean() {
     echo "Backing up ~/.aws/config..."
     cp ~/.aws/config ~/.aws/config.backup.$(date +%Y%m%d_%H%M%S) || true
 
-    # Remove tar-* profiles
-    if grep -q "\\[profile tar-" ~/.aws/config 2>/dev/null; then
+    # Remove tar-* profiles (fixed sed command for macOS)
+    if grep -q "tar-" ~/.aws/config 2>/dev/null; then
       echo "Removing tar-* profiles from ~/.aws/config..."
-      sed -i '' '/\\[profile tar-/,/^$/d' ~/.aws/config || true
+      grep -v "tar-" ~/.aws/config > ~/.aws/config.temp && mv ~/.aws/config.temp ~/.aws/config
       echo -e "${GREEN}✅ SSO profiles removed${NC}"
     fi
+  fi
+
+  # Step 4: Clean CDK context and cache
+  echo ""
+  echo -e "${YELLOW}🗑️ Step 4: Cleaning CDK context and cache...${NC}"
+
+  # Remove CDK context
+  if [ -f cdk.context.json ]; then
+    echo "Removing CDK context file..."
+    rm cdk.context.json
+    echo -e "${GREEN}✅ CDK context cleared${NC}"
+  fi
+
+  # Clear CDK cache
+  if [ -d ~/.cdk ]; then
+    echo "Clearing CDK cache..."
+    rm -rf ~/.cdk/cache || true
+    echo -e "${GREEN}✅ CDK cache cleared${NC}"
+  fi
+
+  # Remove node_modules CDK cache
+  if [ -d node_modules/.cache ]; then
+    echo "Clearing node_modules cache..."
+    rm -rf node_modules/.cache || true
+    echo -e "${GREEN}✅ Node modules cache cleared${NC}"
   fi
 
   echo ""
@@ -289,6 +321,7 @@ deep_clean() {
   echo -e "${GREEN}✅ Applications destroyed${NC}"
   echo -e "${GREEN}✅ CDK bootstrap infrastructure destroyed${NC}"
   echo -e "${GREEN}✅ Local configuration cleaned${NC}"
+  echo -e "${GREEN}✅ CDK context and cache cleared${NC}"
   echo ""
   echo -e "${BLUE}💰 Cost after deep clean:${NC}"
   echo "• Monthly cost: ~\$0.10/month (Control Tower base)"
@@ -525,6 +558,17 @@ deep_clean_silent() {
 
   # Remove .env file
   rm -f .env
+  
+  # Clean CDK context and cache
+  rm -f cdk.context.json
+  rm -rf ~/.cdk/cache &>/dev/null || true
+  rm -rf node_modules/.cache &>/dev/null || true
+  
+  # Remove SSO profiles silently
+  if [ -f ~/.aws/config ]; then
+    cp ~/.aws/config ~/.aws/config.backup.$(date +%Y%m%d_%H%M%S) &>/dev/null || true
+    grep -v "tar-" ~/.aws/config > ~/.aws/config.temp 2>/dev/null && mv ~/.aws/config.temp ~/.aws/config &>/dev/null || true
+  fi
 }
 
 # =============================================================================
